@@ -1,0 +1,67 @@
+{
+  "use_demo_data": false,
+  "data": {
+    "train_sequences": "data/train_sequences.csv",
+    "train_labels": "data/train_labels.csv",
+    "test_sequences": "data/testsequences.csv",
+    "val_sequences": "data/val_sequences.csv",
+    "val_labels": "data/val_labels.csv",
+    "mi_sequences": "data/mi_sequences.csv",
+    "mi_labels": "data/mi_labels.csv",
+    "viz_sequences": "data/trainsequences.csv",
+    "viz_labels": "data/trainlabels.csv",
+    "sequence_length": 200,
+    "n_classes": 18
+  },
+  "phase2": {
+    "kmer_k": 5,
+    "n_positional_bins": 10,
+    "pca_n_components": 50,
+    "n_jobs": 8,
+    "feature_extraction_batch_size": 1000,
+    "use_pca_preprocessing": true,
+    "n_pcs_for_phate": 30,
+    "umap_params": [
+      {"n_neighbors": 15, "min_dist": 0.1},
+      {"n_neighbors": 30, "min_dist": 0.1},
+      {"n_neighbors": 15, "min_dist": 0.25},
+      {"n_neighbors": 50, "min_dist": 0.0}
+    ],
+    "phate_params": [
+      {"knn": 10, "decay": 20},
+      {"knn": 15, "decay": 40},
+      {"knn": 5, "decay": 10}
+    ],
+    "subsample_for_viz": 50000,
+    "random_state": null
+  },
+  "phase3": {
+    "n_classes": 18,
+    "conv1_filters": 128,
+    "conv2_filters": 256,
+    "bottleneck_filters": 512,
+    "kernel1": 19,
+    "kernel2": 10,
+    "dropout_rate": 0.3,
+    "use_l1_regularization": true,
+    "l1_weight": 1e-5,
+    "label_smoothing": 0.08,
+    "learning_rate": 1e-2,
+    "warmup_epochs": 5,
+    "checkpoint_dir": "phase3_model/checkpoints",
+    "training": {
+      "num_workers": 8,
+      "rc_augment": true,
+      "jitter_prob": 0.35,
+      "jitter_min_len": 170,
+      "noise_prob": 0.05,
+      "cache_data": true
+    }
+  },
+  "output": {
+    "features_dir": "phase2_manifold/features",
+    "embeddings_dir": "phase2_manifold/embeddings",
+    "analysis_dir": "phase2_manifold/analysis",
+    "figures_dir": "phase2_manifold/figures"
+  }
+}

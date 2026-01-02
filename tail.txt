@@ -1,0 +1,169 @@
+Last login: Thu Jan  1 21:00:42 on ttys008
+(base)  🐍 base  xiaoyuwang@Nathans-MacBook-Pro-36  ~/Desktop/manifold-dim-reduct   main ±  ./phase3_model/train_full_dataset.sh
+zsh: permission denied: ./phase3_model/train_full_dataset.sh
+(base)  ✘  🐍 base  xiaoyuwang@Nathans-MacBook-Pro-36  ~/Desktop/manifold-dim-reduct   main ±  chmod -x ./phase3_model/train_full_dataset.sh
+(base)  🐍 base  xiaoyuwang@Nathans-MacBook-Pro-36  ~/Desktop/manifold-dim-reduct   main ±  ./phase3_model/train_full_dataset.sh         
+zsh: permission denied: ./phase3_model/train_full_dataset.sh
+(base)  ✘  🐍 base  xiaoyuwang@Nathans-MacBook-Pro-36  ~/Desktop/manifold-dim-reduct   main ±  . /phase3_model/train_full_dataset.sh
+.: no such file or directory: /phase3_model/train_full_dataset.sh
+(base)  ✘  🐍 base  xiaoyuwang@Nathans-MacBook-Pro-36  ~/Desktop/manifold-dim-reduct   main ±  ls
+CLAUDE.md       environment.yml logs            phase3_model
+config.json     guide.md        phase1_filter   README.md
+data            logger          phase2_manifold tip.md
+(base)  🐍 base  xiaoyuwang@Nathans-MacBook-Pro-36  ~/Desktop/manifold-dim-reduct   main ±  . /phase3_model/train_full_dataset.sh
+.: no such file or directory: /phase3_model/train_full_dataset.sh
+(base)  ✘  🐍 base  xiaoyuwang@Nathans-MacBook-Pro-36  ~/Desktop/manifold-dim-reduct   main ±  ./phase3_model/train_full_dataset.sh 
+zsh: permission denied: ./phase3_model/train_full_dataset.sh
+(base)  ✘  🐍 base  xiaoyuwang@Nathans-MacBook-Pro-36  ~/Desktop/manifold-dim-reduct   main ±  chmod +x phase3_model/train_full_dataset.sh
+(base)  🐍 base  xiaoyuwang@Nathans-MacBook-Pro-36  ~/Desktop/manifold-dim-reduct   main ±  ./phase3_model/train_full_dataset.sh       
+==========================================
+Phase 3 Training - Full Dataset
+==========================================
+Config: config.json
+Mode: both
+Epochs: 50
+Batch Size: 256
+Device: auto
+Output log: nohup_phase3_training.out
+==========================================
+
+Training started in background!
+Process ID: 82708
+
+Monitor training:
+  tail -f nohup_phase3_training.out
+
+Check logs:
+  ls -lth logs/*phase3*
+
+Stop training if needed:
+  kill 82708
+
+(base)  🐍 base  xiaoyuwang@Nathans-MacBook-Pro-36  ~/Desktop/manifold-dim-reduct   main ±  tail -f nohup_phase3_training.out
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/Users/xiaoyuwang/Desktop/manifold-dim-reduct/phase3_model/run_phase3.py", line 27, in <module>
+    from phase3_model.train import Trainer
+  File "/Users/xiaoyuwang/Desktop/manifold-dim-reduct/phase3_model/train.py", line 24, in <module>
+    from model import ChromatinCNN, ChromatinCNNConfig
+ModuleNotFoundError: No module named 'model'
+^C
+(base)  ✘  🐍 base  xiaoyuwang@Nathans-MacBook-Pro-36  ~/Desktop/manifold-dim-reduct   main ±  kill 84313                          
+(base)  🐍 base  xiaoyuwang@Nathans-MacBook-Pro-36  ~/Desktop/manifold-dim-reduct   main ±  ./phase3_model/train_full_dataset.sh
+==========================================
+Phase 3 Training - Full Dataset
+==========================================
+Config: config.json
+Mode: both
+Epochs: 50
+Batch Size: 256
+Device: auto
+Output log: nohup_phase3_training.out
+==========================================
+
+Training started in background!
+Process ID: 84699
+
+Monitor training:
+  tail -f nohup_phase3_training.out
+
+Check logs:
+  ls -lth logs/*phase3*
+
+Stop training if needed:
+  kill 84699
+
+(base)  🐍 base  xiaoyuwang@Nathans-MacBook-Pro-36  ~/Desktop/manifold-dim-reduct   main ±  tail -f nohup_phase3_training.out
+12:40:46 - phase3_model.train - INFO - Validation: 100/224 (44.6%) - 12.7/s - ETA: 9.7s
+12:40:47 - phase3_model.train - INFO - Validation: 150/224 (67.0%) - 16.5/s - ETA: 4.5s
+12:40:48 - phase3_model.train - INFO - Validation: 200/224 (89.3%) - 19.5/s - ETA: 1.2s
+12:41:09 - phase3_model.train - INFO - Validation: Completed 224 items in 30.79s (7.3/s)
+12:41:09 - phase3_model.train - INFO - Completed: Validation in 30.79s
+12:41:09 - phase3_model.train - INFO - Epoch 23 Summary
+12:41:09 - phase3_model.train - INFO - Epoch 23 Summary: epoch=23 | train_loss=2.594941127122338 | train_accuracy=0.14836170708955224 | val_loss=2.6563632222158566 | val_accuracy=0.12129365925252913 | learning_rate=0.0006876159934112479
+12:41:09 - phase3_model.train - INFO - Starting: Epoch 24 training
+12:41:21 - phase3_model.train - INFO - Epoch 24 [Train]: 50/670 (7.5%) - 4.1/s - ETA: 149.4s
+12:41:24 - phase3_model.train - INFO - Epoch 24 [Train]: 100/670 (14.9%) - 6.6/s - ETA: 86.3s
+12:41:27 - phase3_model.train - INFO - Epoch 24 [Train]: 150/670 (22.4%) - 8.2/s - ETA: 63.2s
+12:41:30 - phase3_model.train - INFO - Epoch 24 [Train]: 200/670 (29.9%) - 9.4/s - ETA: 50.0s
+12:41:33 - phase3_model.train - INFO - Epoch 24 [Train]: 250/670 (37.3%) - 10.2/s - ETA: 41.0s
+12:41:37 - phase3_model.train - INFO - Epoch 24 [Train]: 300/670 (44.8%) - 10.9/s - ETA: 34.0s
+12:41:40 - phase3_model.train - INFO - Epoch 24 [Train]: 350/670 (52.2%) - 11.4/s - ETA: 28.0s
+12:41:43 - phase3_model.train - INFO - Epoch 24 [Train]: 400/670 (59.7%) - 11.8/s - ETA: 22.8s
+12:41:46 - phase3_model.train - INFO - Epoch 24 [Train]: 450/670 (67.2%) - 12.1/s - ETA: 18.1s
+12:41:49 - phase3_model.train - INFO - Epoch 24 [Train]: 500/670 (74.6%) - 12.4/s - ETA: 13.7s
+12:41:52 - phase3_model.train - INFO - Epoch 24 [Train]: 550/670 (82.1%) - 12.7/s - ETA: 9.5s
+12:41:55 - phase3_model.train - INFO - Epoch 24 [Train]: 600/670 (89.6%) - 12.9/s - ETA: 5.4s
+12:41:59 - phase3_model.train - INFO - Epoch 24 [Train]: 650/670 (97.0%) - 13.1/s - ETA: 1.5s
+12:42:20 - phase3_model.train - INFO - Epoch 24 [Train]: Completed 670 items in 70.79s (9.5/s)
+12:42:20 - phase3_model.train - INFO - Completed: Epoch 24 training in 70.79s
+12:42:20 - phase3_model.train - INFO - Starting: Validation
+12:42:27 - phase3_model.train - INFO - Validation: 50/224 (22.3%) - 7.2/s - ETA: 24.2s
+12:42:28 - phase3_model.train - INFO - Validation: 100/224 (44.6%) - 12.4/s - ETA: 10.0s
+12:42:29 - phase3_model.train - INFO - Validation: 150/224 (67.0%) - 16.4/s - ETA: 4.5s
+12:42:30 - phase3_model.train - INFO - Validation: 200/224 (89.3%) - 19.6/s - ETA: 1.2s
+12:42:51 - phase3_model.train - INFO - Validation: Completed 224 items in 30.75s (7.3/s)
+12:42:51 - phase3_model.train - INFO - Completed: Validation in 30.76s
+12:42:51 - phase3_model.train - INFO - Epoch 24 Summary
+12:42:51 - phase3_model.train - INFO - Epoch 24 Summary: epoch=24 | train_loss=2.591434447800935 | train_accuracy=0.15007579291044776 | val_loss=2.633431855056967 | val_accuracy=0.13050163367288103 | learning_rate=0.0006548539886902862
+12:42:51 - phase3_model.train - INFO - Starting: Epoch 25 training
+12:43:02 - phase3_model.train - INFO - Epoch 25 [Train]: 50/670 (7.5%) - 4.4/s - ETA: 142.4s
+12:43:05 - phase3_model.train - INFO - Epoch 25 [Train]: 100/670 (14.9%) - 6.9/s - ETA: 82.9s
+12:43:08 - phase3_model.train - INFO - Epoch 25 [Train]: 150/670 (22.4%) - 8.5/s - ETA: 61.0s
+12:43:11 - phase3_model.train - INFO - Epoch 25 [Train]: 200/670 (29.9%) - 9.7/s - ETA: 48.6s
+12:43:14 - phase3_model.train - INFO - Epoch 25 [Train]: 250/670 (37.3%) - 10.5/s - ETA: 39.9s
+12:43:17 - phase3_model.train - INFO - Epoch 25 [Train]: 300/670 (44.8%) - 11.2/s - ETA: 33.0s
+12:43:20 - phase3_model.train - INFO - Epoch 25 [Train]: 350/670 (52.2%) - 11.7/s - ETA: 27.3s
+12:43:23 - phase3_model.train - INFO - Epoch 25 [Train]: 400/670 (59.7%) - 12.2/s - ETA: 22.2s
+12:43:27 - phase3_model.train - INFO - Epoch 25 [Train]: 450/670 (67.2%) - 12.5/s - ETA: 17.6s
+12:43:30 - phase3_model.train - INFO - Epoch 25 [Train]: 500/670 (74.6%) - 12.8/s - ETA: 13.3s
+12:43:33 - phase3_model.train - INFO - Epoch 25 [Train]: 550/670 (82.1%) - 13.1/s - ETA: 9.2s
+12:43:36 - phase3_model.train - INFO - Epoch 25 [Train]: 600/670 (89.6%) - 13.3/s - ETA: 5.3s
+12:43:39 - phase3_model.train - INFO - Epoch 25 [Train]: 650/670 (97.0%) - 13.5/s - ETA: 1.5s
+12:44:00 - phase3_model.train - INFO - Epoch 25 [Train]: Completed 670 items in 69.42s (9.7/s)
+12:44:00 - phase3_model.train - INFO - Completed: Epoch 25 training in 69.43s
+12:44:00 - phase3_model.train - INFO - Starting: Validation
+12:44:04 - phase3_model.train - ERROR - Failed: Validation after 4.30s - OSError: [Errno 24] Too many open files
+12:44:04 - __main__ - ERROR - Failed: Training after 2516.61s - OSError: [Errno 24] Too many open files
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/Users/xiaoyuwang/Desktop/manifold-dim-reduct/phase3_model/run_phase3.py", line 276, in <module>
+    main()
+  File "/Users/xiaoyuwang/Desktop/manifold-dim-reduct/phase3_model/run_phase3.py", line 178, in main
+    trainer.train(
+  File "/Users/xiaoyuwang/Desktop/manifold-dim-reduct/phase3_model/train.py", line 258, in train
+    val_loss, val_accuracy = self.validate()
+                             ^^^^^^^^^^^^^^^
+  File "/Users/xiaoyuwang/Desktop/manifold-dim-reduct/phase3_model/train.py", line 209, in validate
+    for sequences, labels in val_loader:
+  File "/Users/xiaoyuwang/miniconda3/lib/python3.12/site-packages/torch/utils/data/dataloader.py", line 484, in __iter__
+    return self._get_iterator()
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/xiaoyuwang/miniconda3/lib/python3.12/site-packages/torch/utils/data/dataloader.py", line 415, in _get_iterator
+    return _MultiProcessingDataLoaderIter(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/xiaoyuwang/miniconda3/lib/python3.12/site-packages/torch/utils/data/dataloader.py", line 1138, in __init__
+    w.start()
+  File "/Users/xiaoyuwang/miniconda3/lib/python3.12/multiprocessing/process.py", line 121, in start
+    self._popen = self._Popen(self)
+                  ^^^^^^^^^^^^^^^^^
+  File "/Users/xiaoyuwang/miniconda3/lib/python3.12/multiprocessing/context.py", line 224, in _Popen
+    return _default_context.get_context().Process._Popen(process_obj)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/xiaoyuwang/miniconda3/lib/python3.12/multiprocessing/context.py", line 289, in _Popen
+    return Popen(process_obj)
+           ^^^^^^^^^^^^^^^^^^
+  File "/Users/xiaoyuwang/miniconda3/lib/python3.12/multiprocessing/popen_spawn_posix.py", line 32, in __init__
+    super().__init__(process_obj)
+  File "/Users/xiaoyuwang/miniconda3/lib/python3.12/multiprocessing/popen_fork.py", line 19, in __init__
+    self._launch(process_obj)
+  File "/Users/xiaoyuwang/miniconda3/lib/python3.12/multiprocessing/popen_spawn_posix.py", line 58, in _launch
+    self.pid = util.spawnv_passfds(spawn.get_executable(),
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/xiaoyuwang/miniconda3/lib/python3.12/multiprocessing/util.py", line 454, in spawnv_passfds
+    errpipe_read, errpipe_write = os.pipe()
+                                  ^^^^^^^^^
+OSError: [Errno 24] Too many open files
+

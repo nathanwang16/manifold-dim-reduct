@@ -1,0 +1,193 @@
+14:45:20 - __main__ - INFO - ======================================================================
+14:45:20 - __main__ - INFO - Phase 3: ChromatinCNN Training and Inference Pipeline
+14:45:20 - __main__ - INFO - ======================================================================
+14:45:20 - __main__ - INFO - Starting: Loading configuration
+14:45:20 - __main__ - INFO - Completed: Loading configuration in 0.00s
+14:45:20 - __main__ - INFO - Device: mps
+14:45:20 - __main__ - INFO - MPS device detected - enabling Metal Performance Shaders acceleration
+14:45:20 - __main__ - INFO - Configuration:
+14:45:20 - __main__ - INFO -   Mode: both
+14:45:20 - __main__ - INFO -   Number of epochs: 50
+14:45:20 - __main__ - INFO -   Batch size: 512
+14:45:20 - __main__ - INFO -   Learning rate: 0.01
+14:45:20 - __main__ - INFO -   Warmup epochs: 5
+14:45:20 - __main__ - INFO -   Conv1 filters: 128
+14:45:20 - __main__ - INFO -   Conv2 filters: 256
+14:45:20 - __main__ - INFO -   Bottleneck filters: 512
+14:45:20 - __main__ - INFO -   L1 regularization: True
+14:45:20 - __main__ - INFO -   Label smoothing: 0.08
+14:45:20 - __main__ - INFO - ----------------------------------------------------------------------
+14:45:20 - __main__ - INFO - Starting Training Phase
+14:45:20 - __main__ - INFO - ----------------------------------------------------------------------
+14:45:20 - __main__ - INFO - Model created: ChromatinCNN
+14:45:20 - __main__ - INFO - Total parameters: 1,131,026
+14:45:20 - phase3_model.dataset - INFO - Initializing datasets...
+14:45:20 - phase3_model.dataset - INFO - Loading sequences from data/train_sequences.csv
+14:45:20 - phase3_model.dataset - INFO - Loaded 171699 sequences
+14:45:20 - phase3_model.dataset - INFO - Loading labels from data/train_labels.csv
+14:45:20 - phase3_model.dataset - INFO - Loaded 171699 labels (converted from 1-18 to 0-17)
+14:45:20 - phase3_model.dataset - INFO - Caching one-hot encodings in memory...
+14:45:24 - phase3_model.dataset - INFO - Cache complete
+14:45:24 - phase3_model.dataset - INFO - Loading sequences from data/val_sequences.csv
+14:45:24 - phase3_model.dataset - INFO - Loaded 57233 sequences
+14:45:24 - phase3_model.dataset - INFO - Loading labels from data/val_labels.csv
+14:45:24 - phase3_model.dataset - INFO - Loaded 57233 labels (converted from 1-18 to 0-17)
+14:45:24 - phase3_model.dataset - INFO - Caching one-hot encodings in memory...
+14:45:25 - phase3_model.dataset - INFO - Cache complete
+14:45:25 - phase3_model.dataset - INFO - Loading sequences from data/testsequences.csv
+14:45:25 - phase3_model.dataset - INFO - Loaded 100008 sequences
+14:45:25 - phase3_model.dataset - INFO - Caching one-hot encodings in memory...
+14:45:27 - phase3_model.dataset - INFO - Cache complete
+14:45:27 - phase3_model.dataset - INFO - Datasets initialized
+14:45:27 - __main__ - INFO - Dataset sizes:
+14:45:27 - __main__ - INFO -   train: 171,699
+14:45:27 - __main__ - INFO -   val: 57,233
+14:45:27 - __main__ - INFO -   test: 100,008
+14:45:27 - phase3_model.train - INFO - Optimizer and scheduler configured with LR=0.01, warmup=5 epochs
+14:45:27 - phase3_model.train - INFO - Trainer initialized on device: mps
+14:45:27 - __main__ - INFO - Starting training...
+14:45:27 - __main__ - INFO - Starting: Training
+14:45:27 - phase3_model.train - INFO - Starting training for 50 epochs
+14:45:27 - phase3_model.train - INFO - Starting: Epoch 1 training
+/Users/xiaoyuwang/miniconda3/lib/python3.12/site-packages/torch/nn/modules/conv.py:370: UserWarning: Using padding='same' with even kernel lengths and odd dilation may require a zero-padded copy of the input be created (Triggered internally at /Users/runner/work/_temp/anaconda/conda-bld/pytorch_1729646995093/work/aten/src/ATen/native/Convolution.cpp:1037.)
+  return F.conv1d(
+14:45:51 - phase3_model.train - INFO - Epoch 1 [Train]: 50/335 (14.9%) - 2.1/s - ETA: 138.0s
+14:45:57 - phase3_model.train - INFO - Epoch 1 [Train]: 100/335 (29.9%) - 3.3/s - ETA: 70.8s
+14:46:03 - phase3_model.train - INFO - Epoch 1 [Train]: 150/335 (44.8%) - 4.1/s - ETA: 44.7s
+14:46:10 - phase3_model.train - INFO - Epoch 1 [Train]: 200/335 (59.7%) - 4.7/s - ETA: 28.6s
+14:46:16 - phase3_model.train - INFO - Epoch 1 [Train]: 250/335 (74.6%) - 5.2/s - ETA: 16.5s
+14:46:22 - phase3_model.train - INFO - Epoch 1 [Train]: 300/335 (89.6%) - 5.5/s - ETA: 6.3s
+14:47:06 - phase3_model.train - INFO - Epoch 1 [Train]: Completed 335 items in 98.50s (3.4/s)
+14:47:06 - phase3_model.train - INFO - Completed: Epoch 1 training in 98.50s
+14:47:06 - phase3_model.train - INFO - Starting: Validation
+14:47:19 - phase3_model.train - INFO - Validation: 50/112 (44.6%) - 3.7/s - ETA: 16.7s
+14:47:21 - phase3_model.train - INFO - Validation: 100/112 (89.3%) - 6.5/s - ETA: 1.9s
+14:48:02 - phase3_model.train - INFO - Validation: Completed 112 items in 56.03s (2.0/s)
+14:48:02 - phase3_model.train - INFO - Completed: Validation in 56.03s
+14:48:02 - phase3_model.train - INFO - Epoch 1 Summary
+14:48:02 - phase3_model.train - INFO - Epoch 1 Summary: epoch=1 | train_loss=5.474097199938191 | train_accuracy=0.08260261194029851 | val_loss=2.769656464457512 | val_accuracy=0.10333199377981235 | learning_rate=0.00208
+14:48:02 - phase3_model.train - INFO - Validation accuracy improved from 0.0000 to 0.1033
+14:48:02 - phase3_model.train - INFO - Saving best checkpoint to phase3_model/checkpoints/best_model.pt
+14:48:02 - phase3_model.train - INFO - Starting: Epoch 2 training
+14:48:24 - phase3_model.train - INFO - Epoch 2 [Train]: 50/335 (14.9%) - 2.3/s - ETA: 124.7s
+14:48:30 - phase3_model.train - INFO - Epoch 2 [Train]: 100/335 (29.9%) - 3.6/s - ETA: 65.1s
+14:48:35 - phase3_model.train - INFO - Epoch 2 [Train]: 150/335 (44.8%) - 4.5/s - ETA: 41.3s
+14:48:41 - phase3_model.train - INFO - Epoch 2 [Train]: 200/335 (59.7%) - 5.1/s - ETA: 26.6s
+14:48:47 - phase3_model.train - INFO - Epoch 2 [Train]: 250/335 (74.6%) - 5.5/s - ETA: 15.4s
+14:48:53 - phase3_model.train - INFO - Epoch 2 [Train]: 300/335 (89.6%) - 5.9/s - ETA: 5.9s
+14:49:37 - phase3_model.train - INFO - Epoch 2 [Train]: Completed 335 items in 95.06s (3.5/s)
+14:49:37 - phase3_model.train - INFO - Completed: Epoch 2 training in 95.07s
+14:49:37 - phase3_model.train - INFO - Starting: Validation
+14:49:50 - phase3_model.train - INFO - Validation: 50/112 (44.6%) - 4.0/s - ETA: 15.7s
+14:49:52 - phase3_model.train - INFO - Validation: 100/112 (89.3%) - 6.8/s - ETA: 1.8s
+14:50:32 - phase3_model.train - INFO - Validation: Completed 112 items in 55.13s (2.0/s)
+14:50:32 - phase3_model.train - INFO - Completed: Validation in 55.13s
+14:50:32 - phase3_model.train - INFO - Epoch 2 Summary
+14:50:32 - phase3_model.train - INFO - Epoch 2 Summary: epoch=2 | train_loss=2.8629389535135297 | train_accuracy=0.0894472947761194 | val_loss=2.697765480194773 | val_accuracy=0.12211486380235179 | learning_rate=0.004059999999999999
+14:50:32 - phase3_model.train - INFO - Validation accuracy improved from 0.1033 to 0.1221
+14:50:32 - phase3_model.train - INFO - Saving best checkpoint to phase3_model/checkpoints/best_model.pt
+14:50:32 - phase3_model.train - INFO - Starting: Epoch 3 training
+14:50:54 - phase3_model.train - INFO - Epoch 3 [Train]: 50/335 (14.9%) - 2.3/s - ETA: 124.6s
+14:51:00 - phase3_model.train - INFO - Epoch 3 [Train]: 100/335 (29.9%) - 3.6/s - ETA: 65.1s
+14:51:06 - phase3_model.train - INFO - Epoch 3 [Train]: 150/335 (44.8%) - 4.5/s - ETA: 41.3s
+14:51:11 - phase3_model.train - INFO - Epoch 3 [Train]: 200/335 (59.7%) - 5.1/s - ETA: 26.5s
+14:51:17 - phase3_model.train - INFO - Epoch 3 [Train]: 250/335 (74.6%) - 5.5/s - ETA: 15.3s
+14:51:23 - phase3_model.train - INFO - Epoch 3 [Train]: 300/335 (89.6%) - 5.9/s - ETA: 5.9s
+14:52:07 - phase3_model.train - INFO - Epoch 3 [Train]: Completed 335 items in 95.05s (3.5/s)
+14:52:07 - phase3_model.train - INFO - Completed: Epoch 3 training in 95.06s
+14:52:07 - phase3_model.train - INFO - Starting: Validation
+14:52:20 - phase3_model.train - INFO - Validation: 50/112 (44.6%) - 4.0/s - ETA: 15.6s
+14:52:22 - phase3_model.train - INFO - Validation: 100/112 (89.3%) - 6.8/s - ETA: 1.8s
+14:53:02 - phase3_model.train - INFO - Validation: Completed 112 items in 55.10s (2.0/s)
+14:53:02 - phase3_model.train - INFO - Completed: Validation in 55.10s
+14:53:02 - phase3_model.train - INFO - Epoch 3 Summary
+14:53:02 - phase3_model.train - INFO - Epoch 3 Summary: epoch=3 | train_loss=2.947871317792295 | train_accuracy=0.09780783582089553 | val_loss=2.7206751150744304 | val_accuracy=0.12213233623958206 | learning_rate=0.0060399999999999985
+14:53:02 - phase3_model.train - INFO - Validation accuracy improved from 0.1221 to 0.1221
+14:53:02 - phase3_model.train - INFO - Saving best checkpoint to phase3_model/checkpoints/best_model.pt
+14:53:02 - phase3_model.train - INFO - Starting: Epoch 4 training
+14:53:24 - phase3_model.train - INFO - Epoch 4 [Train]: 50/335 (14.9%) - 2.3/s - ETA: 125.0s
+14:53:30 - phase3_model.train - INFO - Epoch 4 [Train]: 100/335 (29.9%) - 3.6/s - ETA: 65.2s
+14:53:36 - phase3_model.train - INFO - Epoch 4 [Train]: 150/335 (44.8%) - 4.5/s - ETA: 41.4s
+14:53:42 - phase3_model.train - INFO - Epoch 4 [Train]: 200/335 (59.7%) - 5.1/s - ETA: 26.6s
+14:53:48 - phase3_model.train - INFO - Epoch 4 [Train]: 250/335 (74.6%) - 5.5/s - ETA: 15.4s
+14:53:53 - phase3_model.train - INFO - Epoch 4 [Train]: 300/335 (89.6%) - 5.9/s - ETA: 6.0s
+14:54:37 - phase3_model.train - INFO - Epoch 4 [Train]: Completed 335 items in 95.13s (3.5/s)
+14:54:37 - phase3_model.train - INFO - Completed: Epoch 4 training in 95.13s
+14:54:37 - phase3_model.train - INFO - Starting: Validation
+14:54:50 - phase3_model.train - INFO - Validation: 50/112 (44.6%) - 3.9/s - ETA: 15.7s
+14:54:52 - phase3_model.train - INFO - Validation: 100/112 (89.3%) - 6.8/s - ETA: 1.8s
+14:55:33 - phase3_model.train - INFO - Validation: Completed 112 items in 55.17s (2.0/s)
+14:55:33 - phase3_model.train - INFO - Completed: Validation in 55.17s
+14:55:33 - phase3_model.train - INFO - Epoch 4 Summary
+14:55:33 - phase3_model.train - INFO - Epoch 4 Summary: epoch=4 | train_loss=3.0832617745470645 | train_accuracy=0.09964435634328359 | val_loss=2.7504405698605945 | val_accuracy=0.10165463980570649 | learning_rate=0.008019999999999998
+14:55:33 - phase3_model.train - INFO - Starting: Epoch 5 training
+14:55:55 - phase3_model.train - INFO - Epoch 5 [Train]: 50/335 (14.9%) - 2.3/s - ETA: 125.0s
+14:56:00 - phase3_model.train - INFO - Epoch 5 [Train]: 100/335 (29.9%) - 3.6/s - ETA: 65.2s
+14:56:06 - phase3_model.train - INFO - Epoch 5 [Train]: 150/335 (44.8%) - 4.5/s - ETA: 41.4s
+14:56:12 - phase3_model.train - INFO - Epoch 5 [Train]: 200/335 (59.7%) - 5.1/s - ETA: 26.6s
+14:56:18 - phase3_model.train - INFO - Epoch 5 [Train]: 250/335 (74.6%) - 5.5/s - ETA: 15.4s
+14:56:24 - phase3_model.train - INFO - Epoch 5 [Train]: 300/335 (89.6%) - 5.9/s - ETA: 6.0s
+14:57:08 - phase3_model.train - INFO - Epoch 5 [Train]: Completed 335 items in 95.13s (3.5/s)
+14:57:08 - phase3_model.train - INFO - Completed: Epoch 5 training in 95.13s
+14:57:08 - phase3_model.train - INFO - Starting: Validation
+14:57:21 - phase3_model.train - INFO - Validation: 50/112 (44.6%) - 3.9/s - ETA: 15.9s
+14:57:23 - phase3_model.train - INFO - Validation: 100/112 (89.3%) - 6.8/s - ETA: 1.8s
+14:58:03 - phase3_model.train - INFO - Validation: Completed 112 items in 55.29s (2.0/s)
+14:58:03 - phase3_model.train - INFO - Completed: Validation in 55.29s
+/Users/xiaoyuwang/miniconda3/lib/python3.12/site-packages/torch/optim/lr_scheduler.py:240: UserWarning: The epoch parameter in `scheduler.step()` was not necessary and is being deprecated where possible. Please use `scheduler.step()` to step the scheduler. During the deprecation, if epoch is different from None, the closed form is used instead of the new chainable form, where available. Please open an issue if you are unable to replicate your use case: https://github.com/pytorch/pytorch/issues/new/choose.
+  warnings.warn(EPOCH_DEPRECATION_WARNING, UserWarning)
+14:58:03 - phase3_model.train - INFO - Epoch 5 Summary
+14:58:03 - phase3_model.train - INFO - Epoch 5 Summary: epoch=5 | train_loss=2.929053633248628 | train_accuracy=0.09974347014925374 | val_loss=2.716625826699393 | val_accuracy=0.12358254852969441 | learning_rate=0.01
+14:58:03 - phase3_model.train - INFO - Validation accuracy improved from 0.1221 to 0.1236
+14:58:03 - phase3_model.train - INFO - Saving best checkpoint to phase3_model/checkpoints/best_model.pt
+14:58:03 - phase3_model.train - INFO - Starting: Epoch 6 training
+14:58:25 - phase3_model.train - INFO - Epoch 6 [Train]: 50/335 (14.9%) - 2.3/s - ETA: 125.0s
+14:58:31 - phase3_model.train - INFO - Epoch 6 [Train]: 100/335 (29.9%) - 3.6/s - ETA: 65.2s
+14:58:37 - phase3_model.train - INFO - Epoch 6 [Train]: 150/335 (44.8%) - 4.5/s - ETA: 41.4s
+14:58:42 - phase3_model.train - INFO - Epoch 6 [Train]: 200/335 (59.7%) - 5.1/s - ETA: 26.6s
+14:58:48 - phase3_model.train - INFO - Epoch 6 [Train]: 250/335 (74.6%) - 5.5/s - ETA: 15.4s
+14:58:54 - phase3_model.train - INFO - Epoch 6 [Train]: 300/335 (89.6%) - 5.9/s - ETA: 6.0s
+14:59:38 - phase3_model.train - INFO - Epoch 6 [Train]: Completed 335 items in 95.13s (3.5/s)
+14:59:38 - phase3_model.train - INFO - Completed: Epoch 6 training in 95.14s
+14:59:38 - phase3_model.train - INFO - Starting: Validation
+14:59:51 - phase3_model.train - INFO - Validation: 50/112 (44.6%) - 3.9/s - ETA: 15.9s
+14:59:53 - phase3_model.train - INFO - Validation: 100/112 (89.3%) - 6.7/s - ETA: 1.8s
+15:00:34 - phase3_model.train - INFO - Validation: Completed 112 items in 55.33s (2.0/s)
+15:00:34 - phase3_model.train - INFO - Completed: Validation in 55.33s
+15:00:34 - phase3_model.train - INFO - Epoch 6 Summary
+15:00:34 - phase3_model.train - INFO - Epoch 6 Summary: epoch=6 | train_loss=2.8791429790098277 | train_accuracy=0.09846082089552238 | val_loss=2.7169764084475383 | val_accuracy=0.1283001065818671 | learning_rate=0.009987821469273992
+15:00:34 - phase3_model.train - INFO - Validation accuracy improved from 0.1236 to 0.1283
+15:00:34 - phase3_model.train - INFO - Saving best checkpoint to phase3_model/checkpoints/best_model.pt
+15:00:34 - phase3_model.train - INFO - Starting: Epoch 7 training
+15:00:55 - phase3_model.train - INFO - Epoch 7 [Train]: 50/335 (14.9%) - 2.3/s - ETA: 124.8s
+15:01:01 - phase3_model.train - INFO - Epoch 7 [Train]: 100/335 (29.9%) - 3.6/s - ETA: 65.1s
+15:01:07 - phase3_model.train - INFO - Epoch 7 [Train]: 150/335 (44.8%) - 4.5/s - ETA: 41.4s
+15:01:13 - phase3_model.train - INFO - Epoch 7 [Train]: 200/335 (59.7%) - 5.1/s - ETA: 26.6s
+15:01:19 - phase3_model.train - INFO - Epoch 7 [Train]: 250/335 (74.6%) - 5.5/s - ETA: 15.4s
+15:01:25 - phase3_model.train - INFO - Epoch 7 [Train]: 300/335 (89.6%) - 5.9/s - ETA: 5.9s
+15:02:09 - phase3_model.train - INFO - Epoch 7 [Train]: Completed 335 items in 95.10s (3.5/s)
+15:02:09 - phase3_model.train - INFO - Completed: Epoch 7 training in 95.10s
+15:02:09 - phase3_model.train - INFO - Starting: Validation
+15:02:21 - phase3_model.train - INFO - Validation: 50/112 (44.6%) - 3.9/s - ETA: 15.9s
+15:02:23 - phase3_model.train - INFO - Validation: 100/112 (89.3%) - 6.8/s - ETA: 1.8s
+15:03:04 - phase3_model.train - INFO - Validation: Completed 112 items in 55.29s (2.0/s)
+15:03:04 - phase3_model.train - INFO - Completed: Validation in 55.29s
+15:03:04 - phase3_model.train - INFO - Epoch 7 Summary
+15:03:04 - phase3_model.train - INFO - Epoch 7 Summary: epoch=7 | train_loss=2.909160092339587 | train_accuracy=0.1013526119402985 | val_loss=2.7545050340039388 | val_accuracy=0.10539374137298411 | learning_rate=0.009951345209673482
+15:03:04 - phase3_model.train - INFO - Starting: Epoch 8 training
+15:03:26 - phase3_model.train - INFO - Epoch 8 [Train]: 50/335 (14.9%) - 2.3/s - ETA: 125.9s
+15:03:32 - phase3_model.train - INFO - Epoch 8 [Train]: 100/335 (29.9%) - 3.6/s - ETA: 65.6s
+15:03:38 - phase3_model.train - INFO - Epoch 8 [Train]: 150/335 (44.8%) - 4.4/s - ETA: 41.8s
+15:03:44 - phase3_model.train - INFO - Epoch 8 [Train]: 200/335 (59.7%) - 5.0/s - ETA: 27.0s
+15:03:50 - phase3_model.train - INFO - Epoch 8 [Train]: 250/335 (74.6%) - 5.4/s - ETA: 15.6s
+15:03:56 - phase3_model.train - INFO - Epoch 8 [Train]: 300/335 (89.6%) - 5.8/s - ETA: 6.0s
+15:04:40 - phase3_model.train - INFO - Epoch 8 [Train]: Completed 335 items in 95.96s (3.5/s)
+15:04:40 - phase3_model.train - INFO - Completed: Epoch 8 training in 95.96s
+15:04:40 - phase3_model.train - INFO - Starting: Validation
+15:04:55 - phase3_model.train - INFO - Validation: 50/112 (44.6%) - 3.3/s - ETA: 18.9s
+15:04:57 - phase3_model.train - INFO - Validation: 100/112 (89.3%) - 5.8/s - ETA: 2.1s
+15:05:38 - phase3_model.train - INFO - Validation: Completed 112 items in 57.77s (1.9/s)
+15:05:38 - phase3_model.train - INFO - Completed: Validation in 57.77s
+15:05:38 - phase3_model.train - INFO - Epoch 8 Summary
+15:05:38 - phase3_model.train - INFO - Epoch 8 Summary: epoch=8 | train_loss=2.8876436361626014 | train_accuracy=0.10012243470149254 | val_loss=2.7299136093684604 | val_accuracy=0.1262034141142348 | learning_rate=0.009890748929868663
+15:05:38 - phase3_model.train - INFO - Starting: Epoch 9 training

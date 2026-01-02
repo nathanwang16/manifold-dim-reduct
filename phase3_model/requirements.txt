@@ -1,0 +1,21 @@
+# Phase 3: ChromatinCNN Requirements
+
+# Core PyTorch
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Data handling
+numpy>=1.24.0
+pandas>=2.0.0
+
+# Progress bars
+tqdm>=4.65.0
+
+# Logging (already in project)
+# logger (local module)
+
+
+
+
+
+
