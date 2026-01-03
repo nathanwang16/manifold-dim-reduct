@@ -1,0 +1,94 @@
+16:41:10 - __main__ - INFO - ============================================================
+16:41:10 - __main__ - INFO - Phase 6: Steering & Alignment Techniques
+16:41:10 - __main__ - INFO - ============================================================
+16:41:10 - __main__ - INFO - Using device: mps
+16:41:10 - __main__ - INFO - Starting: Loading model
+16:41:10 - phase3_model.inference - INFO - Loading model from phase3_model/checkpoints/best_model.pt
+16:41:10 - phase3_model.inference - INFO - Model loaded. Epoch: 9, Val Acc: 0.1275
+16:41:10 - __main__ - INFO - Completed: Loading model in 0.05s
+16:41:10 - __main__ - INFO - Starting: Loading data
+16:41:10 - phase3_model.dataset - INFO - Initializing datasets...
+16:41:10 - phase3_model.dataset - INFO - Loading sequences from data/train_sequences.csv
+16:41:11 - phase3_model.dataset - INFO - Loaded 171699 sequences
+16:41:11 - phase3_model.dataset - INFO - Loading labels from data/train_labels.csv
+16:41:11 - phase3_model.dataset - INFO - Loaded 171699 labels (converted from 1-18 to 0-17)
+16:41:11 - phase3_model.dataset - INFO - Caching one-hot encodings in memory...
+16:41:14 - phase3_model.dataset - INFO - Cache complete
+16:41:14 - phase3_model.dataset - INFO - Loading sequences from data/val_sequences.csv
+16:41:14 - phase3_model.dataset - INFO - Loaded 57233 sequences
+16:41:14 - phase3_model.dataset - INFO - Loading labels from data/val_labels.csv
+16:41:14 - phase3_model.dataset - INFO - Loaded 57233 labels (converted from 1-18 to 0-17)
+16:41:14 - phase3_model.dataset - INFO - Caching one-hot encodings in memory...
+16:41:15 - phase3_model.dataset - INFO - Cache complete
+16:41:15 - phase3_model.dataset - INFO - Loading sequences from data/testsequences.csv
+16:41:15 - phase3_model.dataset - INFO - Loaded 100008 sequences
+16:41:15 - phase3_model.dataset - INFO - Caching one-hot encodings in memory...
+16:41:17 - phase3_model.dataset - INFO - Cache complete
+16:41:17 - phase3_model.dataset - INFO - Datasets initialized
+16:41:17 - __main__ - INFO - Completed: Loading data in 6.68s
+16:41:17 - __main__ - INFO - Starting: Activation extraction
+16:41:17 - phase6_steering.activation_cache - INFO - ActivationCache initialized on device: mps
+16:41:17 - __main__ - INFO - Loading cached activations...
+16:41:17 - phase6_steering.activation_cache - INFO - Loaded activation cache from: phase6_steering/cache/activations_train.npz
+16:41:17 - phase6_steering.activation_cache - INFO - Activations shape: (1696, 1024)
+16:41:17 - __main__ - INFO - Completed: Activation extraction in 0.03s
+16:41:17 - __main__ - INFO - Training accuracy: 0.1309
+16:41:17 - __main__ - INFO - Starting: Steering vector computation
+16:41:17 - __main__ - INFO - Loading cached steering vectors...
+16:41:17 - phase6_steering.steering_vectors - INFO - SteeringVectorComputer: 18 classes, 1024 features
+16:41:17 - phase6_steering.steering_vectors - INFO - Loaded steering vectors from: phase6_steering/cache/steering_vectors.npz
+16:41:17 - __main__ - INFO - Completed: Steering vector computation in 0.01s
+16:41:17 - __main__ - INFO - Starting: Alignment evaluation
+16:41:17 - phase6_steering.alignment_evaluation - INFO - AlignmentEvaluator initialized on device: mps
+16:41:17 - phase6_steering.alignment_evaluation - INFO - Starting: RC Consistency evaluation
+16:41:17 - phase6_steering.alignment_evaluation - INFO - Computing RC consistency...
+RC consistency:   0%|                                            | 0/224 [00:00<?, ?it/s]/Users/xiaoyuwang/miniconda3/lib/python3.12/site-packages/torch/nn/modules/conv.py:370: UserWarning: Using padding='same' with even kernel lengths and odd dilation may require a zero-padded copy of the input be created (Triggered internally at /Users/runner/work/_temp/anaconda/conda-bld/pytorch_1729646995093/work/aten/src/ATen/native/Convolution.cpp:1037.)
+  return F.conv1d(
+RC consistency: 100%|██████████████████████████████████| 224/224 [01:32<00:00,  2.42it/s]
+16:42:50 - phase6_steering.alignment_evaluation - INFO - RC consistency: 0.7830
+16:42:50 - phase6_steering.alignment_evaluation - INFO - Logit correlation: 0.9612
+16:42:50 - phase6_steering.alignment_evaluation - INFO - Completed: RC Consistency evaluation in 92.77s
+16:42:50 - phase6_steering.alignment_evaluation - INFO - Starting: Calibration evaluation
+16:42:50 - phase6_steering.alignment_evaluation - INFO - Computing calibration metrics...
+Calibration: 100%|█████████████████████████████████████| 224/224 [01:02<00:00,  3.56it/s]
+16:43:53 - phase6_steering.temperature_scaling - INFO - Fitting temperature scaler using nll objective
+16:43:54 - phase6_steering.temperature_scaling - INFO - Optimal temperature: 0.4748
+16:43:54 - phase6_steering.alignment_evaluation - INFO - ECE before: 0.0355
+16:43:54 - phase6_steering.alignment_evaluation - INFO - ECE after: 0.0115
+16:43:54 - phase6_steering.alignment_evaluation - INFO - Completed: Calibration evaluation in 63.71s
+16:43:54 - phase6_steering.alignment_evaluation - INFO - Saved reliability diagram to: phase6_steering/results/figures/reliability_diagram.png
+16:43:54 - phase6_steering.alignment_evaluation - INFO - Starting: Monotonicity evaluation
+16:43:54 - phase6_steering.alignment_evaluation - INFO - Running 4 monotonicity tests...
+Monotonicity tests: 100%|██████████████████████████████████| 4/4 [00:00<00:00, 17.70it/s]
+16:44:24 - phase6_steering.alignment_evaluation - INFO - Completed: Monotonicity evaluation in 29.73s
+16:44:24 - phase6_steering.temperature_scaling - INFO - Saved temperature scaler to: phase6_steering/results/temperature.json
+16:44:24 - phase6_steering.alignment_evaluation - INFO - Alignment report saved to: phase6_steering/results
+16:44:24 - __main__ - INFO - Completed: Alignment evaluation in 186.46s
+16:44:24 - __main__ - INFO - Starting: Contrastive steering analysis
+16:44:24 - phase6_steering.inference_steering - INFO - SteeringInferenceEngine initialized on device: mps
+16:44:24 - phase6_steering.contrastive_steering - INFO - ContrastiveSteeringEngine initialized
+16:44:24 - phase6_steering.activation_cache - INFO - ActivationCache initialized on device: mps
+16:44:24 - phase6_steering.activation_cache - INFO - Extracting activations from layer: bottleneck
+Extracting bottleneck: 100%|███████████████████████████| 224/224 [01:05<00:00,  3.44it/s]
+16:45:29 - phase6_steering.activation_cache - INFO - Extracted activations shape: (57233, 1024)
+16:45:29 - phase6_steering.activation_cache - INFO - Total samples: 57233
+16:45:29 - phase6_steering.contrastive_steering - INFO - Computed confusion matrix, shape: (18, 18)
+16:45:29 - phase6_steering.contrastive_steering - INFO - Identified 10 confused pairs (threshold=0.05)
+16:45:29 - phase6_steering.contrastive_steering - INFO -   Labels 12 <-> 17: confusion = 0.7327
+16:45:29 - phase6_steering.contrastive_steering - INFO -   Labels 9 <-> 17: confusion = 0.6286
+16:45:29 - phase6_steering.contrastive_steering - INFO -   Labels 5 <-> 17: confusion = 0.6179
+16:45:29 - phase6_steering.contrastive_steering - INFO -   Labels 4 <-> 17: confusion = 0.5313
+16:45:29 - phase6_steering.contrastive_steering - INFO -   Labels 10 <-> 17: confusion = 0.4970
+16:45:29 - phase6_steering.contrastive_steering - INFO - Starting: Evaluating contrastive steering
+Evaluating: 100%|██████████████████████████████████████| 224/224 [02:58<00:00,  1.26it/s]
+16:48:27 - phase6_steering.contrastive_steering - INFO - Completed: Evaluating contrastive steering in 178.42s
+16:48:27 - __main__ - INFO - Completed: Contrastive steering analysis in 243.82s
+16:48:27 - __main__ - INFO - ============================================================
+16:48:27 - __main__ - INFO - Phase 6 Complete - Summary
+16:48:27 - __main__ - INFO - ============================================================
+16:48:27 - __main__ - INFO -   train_accuracy: 0.1309
+16:48:27 - __main__ - INFO -   rc_consistency: 0.7830
+16:48:27 - __main__ - INFO -   ece_before: 0.0355
+16:48:27 - __main__ - INFO -   ece_after: 0.0115
+16:48:27 - __main__ - INFO -   contrastive_improvement: 0.0000
+16:48:27 - __main__ - INFO - Summary saved to: phase6_steering/results/phase6_summary.json

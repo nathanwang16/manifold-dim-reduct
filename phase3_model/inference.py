@@ -40,8 +40,8 @@ def load_model(
     """
     logger.info(f"Loading model from {checkpoint_path}")
 
-    # Load checkpoint
-    checkpoint = torch.load(checkpoint_path, map_location=device)
+    # Load checkpoint with weights_only=True for security
+    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
 
     # Extract model config
     model_config_dict = checkpoint.get('config', {})

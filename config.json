@@ -41,7 +41,7 @@
     "conv2_filters": 256,
     "bottleneck_filters": 512,
     "kernel1": 19,
-    "kernel2": 10,
+    "kernel2": 9,
     "dropout_rate": 0.3,
     "use_l1_regularization": true,
     "l1_weight": 1e-5,
@@ -57,6 +57,31 @@
       "noise_prob": 0.05,
       "cache_data": true
     }
+  },
+  "phase6": {
+    "steering": {
+      "intervention_layer": "bottleneck",
+      "default_alpha": 0.5,
+      "alpha_search_range": [0.0, 2.0],
+      "alpha_search_steps": 20,
+      "confidence_threshold": 0.6
+    },
+    "contrastive": {
+      "confusion_threshold": 0.05,
+      "top_k_pairs": 10,
+      "bidirectional": true
+    },
+    "alignment": {
+      "calibration_n_bins": 15,
+      "monotonicity_levels": 10,
+      "rc_averaging_inference": true
+    },
+    "temperature_scaling": {
+      "method": "nll",
+      "initial_temp": 0.8
+    },
+    "cache_dir": "phase6_steering/cache",
+    "results_dir": "phase6_steering/results"
   },
   "output": {
     "features_dir": "phase2_manifold/features",
