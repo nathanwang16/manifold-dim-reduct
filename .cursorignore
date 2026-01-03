@@ -6,3 +6,6 @@
 !phase3_model/checkpoints/
 !phase6_steering/cache/
 !phase6_steering/results/
+
+# Also keep .npy files visible for analysis
+!**/*.npy

@@ -14,6 +14,9 @@ logs/
 **/__pycache__/
 **/*.pyc
 
+# Large data files
+**/*.npy
+
 # Model artifacts
 phase3_model/checkpoints/
 phase6_steering/cache/
