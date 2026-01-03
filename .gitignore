@@ -1,10 +1,20 @@
+# Claude-specific
 .out-of-code-insights
 CLAUDE.md
 .claude
+
+# Large directories
+data/
 logs/
 
-data/
+# Editor
 .vscode/
 
-.cursorignore
+# Python cache
+**/__pycache__/
+**/*.pyc
 
+# Model artifacts
+phase3_model/checkpoints/
+phase6_steering/cache/
+phase6_steering/results/

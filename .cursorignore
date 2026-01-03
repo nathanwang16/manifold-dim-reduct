@@ -1,0 +1,8 @@
+# Add directories or file patterns to ignore during indexing (e.g. foo/ or *.csv)
+
+# Keep these visible to Cursor agents despite being in .gitignore
+!logs/
+!CLAUDE.md
+!phase3_model/checkpoints/
+!phase6_steering/cache/
+!phase6_steering/results/
