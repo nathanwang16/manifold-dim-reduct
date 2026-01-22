@@ -1,0 +1,101 @@
+{
+  "checkpoint": {
+    "path": "/content/drive/MyDrive/chromatin_phase3_clean/best_model.pt",
+    "epoch": 34,
+    "best_val_acc_in_ckpt": 0.1881956214072301
+  },
+  "val": {
+    "n": 57233,
+    "val_acc": 0.18817814896999982,
+    "rc_consistency_rate": 0.6087921304142715,
+    "mean_confidence": 0.16438110172748566,
+    "family_acc": 0.6359967151818007,
+    "family_mean_confidence": 0.6191051602363586
+  },
+  "hierarchy": {
+    "n_families": 3,
+    "family_names": [
+      "background_repressed",
+      "enhancer_like",
+      "promoter_polycomb"
+    ],
+    "n_groups_family_subcluster": 7
+  },
+  "mi_analysis": {
+    "embedding": {
+      "dim": 512,
+      "class_counts": [
+        3179,
+        3179,
+        3180,
+        3179,
+        3180,
+        3179,
+        3180,
+        3180,
+        3179,
+        3180,
+        3180,
+        3180,
+        3180,
+        3179,
+        3180,
+        3180,
+        3179,
+        3180
+      ],
+      "family_counts": [
+        15899,
+        28617,
+        12717
+      ],
+      "group_counts": [
+        6360,
+        9539,
+        6359,
+        9538,
+        12720,
+        9538,
+        3179
+      ],
+      "centroid_distances": {
+        "fine_classes": {
+          "within_family_mean": 2.384454821737913,
+          "across_family_mean": 5.52607543397658,
+          "within_family_median": 2.010442018508911,
+          "across_family_median": 5.28456449508667,
+          "within_over_across_ratio": 0.43149154408513407
+        }
+      }
+    },
+    "confusions": {
+      "mistakes_total": 46463,
+      "mistakes_within_family": 23464,
+      "mistakes_across_family": 22999,
+      "within_family_frac": 0.5050039816628284
+    }
+  },
+  "probe_scores": {
+    "probe_family": {
+      "name": "family",
+      "n_classes": 3,
+      "train_acc": 0.6787678383443047,
+      "val_acc": 0.6310345430084042,
+      "backend": "sklearn"
+    },
+    "probe_group_family_subcluster": {
+      "name": "group_family_subcluster",
+      "n_classes": 7,
+      "train_acc": 0.43386435214103813,
+      "val_acc": 0.37948386420421787,
+      "backend": "sklearn"
+    },
+    "probe_fine_label": {
+      "name": "fine_label",
+      "n_classes": 18,
+      "train_acc": 0.2334022041575846,
+      "val_acc": 0.1862037635629794,
+      "backend": "sklearn"
+    }
+  }
+}

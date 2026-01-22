@@ -1,120 +1,70 @@
-This summary provides the necessary background and administrative details for a teammate joining the **Chromatin State Prediction Challenge** at the UCLA MiniHack1. Following the background is a revised master plan designed to handle the potentially abstract nature of the challenge labels.
+# Chromatin State Prediction Challenge: "The Discovery Engine"
 
+This repository contains the solution for the **Chromatin State Prediction Challenge** at the UCLA MiniHack. The goal is to predict **ChromHMM chromatin state annotations** (18 classes) for **200bp DNA sequences**.
 
+Because the labels are provided as abstract integers (1–18), this solution employs a **"Discovery Engine"** approach: we treat the labels as unknown biological states and use manifold learning, interpretable deep learning, and feature analysis to "rediscover" their biological meaning (e.g., Promoter, Enhancer, Heterochromatin).
 
-### **Competition Introduction & Requirements**
+## Repository Structure
 
-- **The Task**: Predict the correct **ChromHMM chromatin state annotation** for a given **200bp DNA sequence** in isolation.
+```
+manifold-dim-reduct/
+├── phase1_filter/       # Data engineering & augmentation
+├── phase2_manifold/     # Manifold learning (UMAP/PHATE) & visualization
+├── phase3_model/        # Main CNN model (training & inference)
+├── phase6_steering/     # Steering vectors & alignment analysis
+├── phase8/              # Label-to-Biological State identification
+├── data/                # Dataset folder (input CSVs)
+├── guide.md             # Detailed research master plan
+└── README.md            # This file
+```
 
-- **Data Files**:
+## Key Components
 
-  - 
+### 1. Data Engineering (`phase1_filter/`)
+- **Reverse Complement Augmentation**: Ensures the model treats forward/reverse strands symmetrically.
+- **Hierarchy Extraction**: Infers super-families (e.g., "Active", "Repressed") from label similarities.
 
-    **`trainsequences.csv`**: 286,164 DNA sequences (200bp each).
+### 2. Manifold Analysis (`phase2_manifold/`)
+- Maps the 18 states into a low-dimensional functional landscape.
+- Uses **PHATE** and **UMAP** on k-mer frequencies to visualize label relationships.
 
-  - 
+### 3. The "Discovery Engine" Model (`phase3_model/`)
+- **Architecture**: `ChromatinCNNAttention`
+  - 1D-CNN backbone for motif detection.
+  - Self-attention mechanism for long-range dependencies.
+  - Global pooling for position invariance.
+- **Training**:
+  - RC-consistency loss.
+  - Hierarchical multitask learning (optional).
+  - Data-driven filter initialization (Mechanistic Interpretability fix).
 
-    **`trainlabels.csv`**: 286,164 labels corresponding to the training sequences, provided as integers from **1 to 18**.
+### 4. Steering & Alignment (`phase6_steering/`)
+- **Steering Vectors**: Calculate directions in activation space that shift predictions from one state to another.
+- **Inference-Time Intervention**: Use steering to resolve confusion between similar states.
 
-  - 
+### 5. Biological Mapping (`phase8/`)
+- Matches the abstract labels (1-18) to biological states using feature profiles (GC content, CpG ratio, Repeats).
+- Uses **Hungarian Assignment** to optimally map learned clusters to known ChromHMM states.
 
-    **`testsequences.csv`**: 100,008 sequences for which you must predict labels.
+## Usage
 
-- **Dataset Balance**: Every one of the 18 states is represented in **equal proportions** (1/18th of the data) in both the training and test set.
+### Training
+```bash
+python phase3_model/run_phase3.py --config config.json
+```
 
-- **Key Rules**:
+### Inference
+```bash
+python phase3_model/inference.py
+```
 
-  - **No External Data**: You may only use the provided files.
+### Analysis
+```bash
+python phase6_steering/analysis.py
+```
 
-  - **No Specialized Software**: You cannot use existing software specifically designed for DNA sequence prediction8. Standard machine learning libraries (e.g., PyTorch, Scikit-learn) are allowed.
-
-    
-
-- **Submission Details**:
-
-  - **Format**: A file named **`predictions.csv`** containing 100,008 integers (one per line).
-
-  - **Packaging**: The `predictions.csv` file **must be placed in a zip file** (any name) for upload.
-
-  - **Platform**: Submissions are uploaded to **Codabench**.
-
-    
-
-### **The 6 Underlying Histone Marks**
-
-The 18 states are defined by the presence or absence of specific chemical "marks" on the DNA packaging proteins. The model for this challenge is based on these **six marks**:
-
-1. **H3K4me3**: Active transcription start sites.
-2. **H3K27ac**: Active enhancers and promoters.
-3. **H3K4me1**: Enhancer regions.
-4. **H3K36me3**: Actively transcribed gene bodies.
-5. **H3K9me3**: Repressed/silenced heterochromatin.
-6. **H3K27me3**: Polycomb-repressed regions.
-
-
-
-### **Master Plan: "The Discovery Engine"**
-
-Because the 18 labels in the CSV may be abstract (integers 1–18) and potentially divorced from their original biological meanings in the PDF, the plan shifts from "label prediction" to **"functional discovery."**
-
-### Phase 1: Genomic Data Engineering & Augmentation
-
-The goal is to bake biological "first principles" into your dataset before the model even sees it.
-
-- **Strand Invariance (RC Augmentation):** Double your training set by generating the **Reverse Complement (RC)**for every 200bp sequence111. This ensures the model treats `GATTACA` and `TGTAATC` as biologically identical.
-- **Position Jittering:** During training, randomly crop 180bp windows from the 200bp sequences. This forces the model to recognize motifs regardless of their location within the interval.
-
-### Phase 2: Exploratory Manifold Analysis
-
-Map the "functional landscape" of the genome to understand how the 18 states overlap.
-
-- 
-
-  **K-mer Vectorization:** Convert the sequences into 5-mer or 6-mer frequency counts to capture the "local vocabulary".
-
-  
-
-  
-
-- 
-
-  **PHATE/UMAP Embedding:** Use **PHATE** to visualize the 286,164 training samples in a low-dimensional space.
-
-  
-
-  
-
-- **Goal**: Determine which abstract labels (e.g., Label 3 vs Label 17) are biologically similar and which are distinct. This prevents the model from treating "Active" and "Repressed" states as equally similar.
-
-### Phase 3: The Mechanistic "Engine" (Architecture)
-
-Build a model designed for transparency rather than complexity.
-
-- **1D-CNN Core:** Use a 1D Convolutional layer with 32–64 filters of length 15–20bp. These filters will act as automated scanners for biological motifs.
-- **Global Max Pooling:** Apply this after the CNN layer to achieve **position invariance**—extracting the single strongest "firing" of a motif anywhere in the sequence9.
-- **Sparse Autoencoder (SAE) Attachment:** Attach a Sparse Autoencoder to the CNN activations. The SAE will "de-mix" the overlapping signals of the CNN into clean, **monosemantic motifs** (e.g., a "pure" TATA-box feature).
-- **Mapping Meaning**: If SAE Feature A activates for Label 1, and Feature A represents a known promoter motif, we can conclude that **Label 1 = Promoter-like**.
-
-### Phase 4: Discovery & Causal Patching
-
-Use Mechanistic Interpretability to "decompile" what the model has learned.
-
-- **Circuit Tracing**: Take a sequence the model labels as "13" and "patch" in the activations of a "Label 1" motif.
-- **Logic**: If the model output flips to "1," you have identified the **causal DNA code** for that abstract label.
-
-### Phase 5: Steering for Performance (Inference-Time Intervention)
-
-Use your discovery of biological patterns to boost accuracy on the 100,008 test sequences.
-
-- **Steering Vectors**: Calculate the "Average Activation Direction" for each of the 18 states.
-- **Inference Correction**: If the model is unsure between two states, project the activations onto your discovered "State Vectors." Use the steering nudge to resolve the tie toward the state that matches the underlying biological motifs.
-
-### Summary of Competition Specs
-
-- **Input:** 200bp DNA sequences (A, C, G, T only).
-
-- **Task:** Predict one of 18 functional labels15.
-
-- **Data Balance:** Each state is present in equal proportions in training and test sets16161616.
-
-- **Rule Reminder:** No external data is allowed; you must rely entirely on the provided `trainsequences.csv`17.
+## Competition Specs
+- **Input**: 200bp DNA (A, C, G, T).
+- **Output**: Integer label 1–18.
+- **Metric**: Accuracy.
+- **Constraints**: No external data, no specialized DNA software (standard ML libs only).

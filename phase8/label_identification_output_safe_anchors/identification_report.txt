@@ -1,0 +1,49 @@
+========================================================================================
+PHASE 8 (SAFE+ANCHORS): LABEL → BIOLOGICAL STATE REPORT
+========================================================================================
+
+Anchors (state->label): TssA->14, Het->6, Quies->18, ZnfRpts->2
+
+LABEL → STATE   (flags show if assigned state != top-1 similarity)
+----------------------------------------------------------------------------------------
+  Label  1 → ReprPC       (margin= 0.594, best_sim=-1.877)  [not top1=TssFlnk]
+  Label  2 → ZnfRpts      (margin= 0.132, best_sim=-3.465)  [not top1=EnhBiv]
+  Label  3 → TssFlnkU     (margin= 0.408, best_sim=-1.385)  [not top1=EnhA1]
+  Label  4 → TssFlnkD     (margin= 0.538, best_sim=-0.927)  [not top1=EnhA1]
+  Label  5 → EnhWk        (margin= 0.023, best_sim=-1.740)  [not top1=EnhA2]
+  Label  6 → Het          (margin= 0.401, best_sim=-1.930)  [not top1=EnhA2]
+  Label  7 → EnhG1        (margin= 1.015, best_sim=-1.350)  [not top1=EnhA1]
+  Label  8 → EnhA1        (margin= 1.142, best_sim=-1.526)
+  Label  9 → EnhA2        (margin= 0.917, best_sim=-1.767)  [not top1=EnhA1]
+  Label 10 → TxWk         (margin= 0.402, best_sim=-2.029)  [not top1=EnhA2]
+  Label 11 → EnhG2        (margin= 0.833, best_sim=-1.700)  [not top1=EnhA1]
+  Label 12 → TssBiv       (margin= 1.316, best_sim=-1.496)  [not top1=EnhA1]
+  Label 13 → ReprPCWk     (margin= 0.408, best_sim=-2.656)  [not top1=EnhA2]
+  Label 14 → TssA         (margin= 0.680, best_sim=-3.351)  [not top1=TssFlnk]
+  Label 15 → TssFlnk      (margin= 0.200, best_sim=-1.723)
+  Label 16 → EnhBiv       (margin= 0.839, best_sim=-1.308)  [not top1=EnhA1]
+  Label 17 → Tx           (margin= 0.267, best_sim=-1.755)  [not top1=EnhA1]
+  Label 18 → Quies        (margin= 0.424, best_sim=-2.520)  [not top1=EnhA2]
+
+Per-label SAFE feature centroids
+----------------------------------------------------------------------------------------
+ Label      State |     gc_content |     at_content |      cpg_ratio |       cpg_freq | repeat_density |        entropy
+-----------------------------------------------------------------------------------------------------------------------
+     1     ReprPC |         0.5861 |         0.4139 |         0.6871 |         0.0670 |         0.1157 |         1.8953
+     2    ZnfRpts |         0.5178 |         0.4822 |         0.5568 |         0.0494 |         0.1386 |         1.8768
+     3   TssFlnkU |         0.5335 |         0.4665 |         0.4256 |         0.0342 |         0.1027 |         1.9382
+     4   TssFlnkD |         0.4999 |         0.5001 |         0.3796 |         0.0266 |         0.1053 |         1.9409
+     5      EnhWk |         0.4354 |         0.5646 |         0.2395 |         0.0129 |         0.1068 |         1.9368
+     6        Het |         0.4103 |         0.5897 |         0.2137 |         0.0101 |         0.1140 |         1.9247
+     7      EnhG1 |         0.4789 |         0.5211 |         0.2405 |         0.0152 |         0.0975 |         1.9495
+     8      EnhA1 |         0.5056 |         0.4944 |         0.2492 |         0.0172 |         0.0939 |         1.9538
+     9      EnhA2 |         0.4510 |         0.5490 |         0.1965 |         0.0106 |         0.0947 |         1.9515
+    10       TxWk |         0.4083 |         0.5917 |         0.1948 |         0.0090 |         0.1117 |         1.9278
+    11      EnhG2 |         0.4513 |         0.5487 |         0.2011 |         0.0111 |         0.0964 |         1.9467
+    12     TssBiv |         0.4736 |         0.5264 |         0.2530 |         0.0149 |         0.0917 |         1.9453
+    13   ReprPCWk |         0.3871 |         0.6129 |         0.1802 |         0.0074 |         0.1114 |         1.9121
+    14       TssA |         0.6550 |         0.3450 |         0.7304 |         0.0815 |         0.1181 |         1.8727
+    15    TssFlnk |         0.5883 |         0.4117 |         0.4560 |         0.0420 |         0.1048 |         1.9275
+    16     EnhBiv |         0.4905 |         0.5095 |         0.2529 |         0.0168 |         0.0999 |         1.9439
+    17         Tx |         0.4472 |         0.5528 |         0.2127 |         0.0115 |         0.1038 |         1.9363
+    18      Quies |         0.3872 |         0.6128 |         0.1878 |         0.0077 |         0.1115 |         1.9164

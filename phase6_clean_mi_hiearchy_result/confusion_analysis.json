@@ -1,0 +1,54 @@
+{
+  "embedding": {
+    "dim": 512,
+    "class_counts": [
+      3179,
+      3179,
+      3180,
+      3179,
+      3180,
+      3179,
+      3180,
+      3180,
+      3179,
+      3180,
+      3180,
+      3180,
+      3180,
+      3179,
+      3180,
+      3180,
+      3179,
+      3180
+    ],
+    "family_counts": [
+      15899,
+      28617,
+      12717
+    ],
+    "group_counts": [
+      6360,
+      9539,
+      6359,
+      9538,
+      12720,
+      9538,
+      3179
+    ],
+    "centroid_distances": {
+      "fine_classes": {
+        "within_family_mean": 2.384454821737913,
+        "across_family_mean": 5.52607543397658,
+        "within_family_median": 2.010442018508911,
+        "across_family_median": 5.28456449508667,
+        "within_over_across_ratio": 0.43149154408513407
+      }
+    }
+  },
+  "confusions": {
+    "mistakes_total": 46463,
+    "mistakes_within_family": 23464,
+    "mistakes_across_family": 22999,
+    "within_family_frac": 0.5050039816628284
+  }
+}

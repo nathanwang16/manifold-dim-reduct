@@ -1,0 +1,26 @@
+{
+  "1": {"family": "promoter_polycomb", "subcluster": 1, "name_hint": "TssBiv_or_ReprPC_like"},
+  "2": {"family": "promoter_polycomb", "subcluster": 2, "name_hint": "TssFlnk_like"},
+  "3": {"family": "enhancer_like", "subcluster": 1, "name_hint": "enhancer_sub1"},
+  "4": {"family": "enhancer_like", "subcluster": 1, "name_hint": "enhancer_sub1"},
+  "5": {"family": "background_repressed", "subcluster": 2, "name_hint": "background_sub2"},
+  "6": {"family": "background_repressed", "subcluster": 2, "name_hint": "background_sub2"},
+  "7": {"family": "enhancer_like", "subcluster": 3, "name_hint": "enhancer_sub3"},
+  "8": {"family": "enhancer_like", "subcluster": 3, "name_hint": "enhancer_sub3"},
+  "9": {"family": "enhancer_like", "subcluster": 2, "name_hint": "enhancer_sub2"},
+  "10": {"family": "background_repressed", "subcluster": 2, "name_hint": "background_sub2"},
+  "11": {"family": "enhancer_like", "subcluster": 2, "name_hint": "enhancer_sub2"},
+  "12": {"family": "enhancer_like", "subcluster": 3, "name_hint": "enhancer_sub3"},
+  "13": {"family": "background_repressed", "subcluster": 1, "name_hint": "background_sub1"},
+  "14": {"family": "promoter_polycomb", "subcluster": 1, "name_hint": "TssA_like"},
+  "15": {"family": "promoter_polycomb", "subcluster": 1, "name_hint": "promoter_polycomb_sub1"},
+  "16": {"family": "enhancer_like", "subcluster": 3, "name_hint": "enhancer_sub3"},
+  "17": {"family": "enhancer_like", "subcluster": 2, "name_hint": "enhancer_sub2"},
+  "18": {"family": "background_repressed", "subcluster": 1, "name_hint": "background_sub1"}
+}
+
+
+
+
+
+

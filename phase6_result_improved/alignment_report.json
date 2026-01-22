@@ -1,0 +1,10 @@
+{
+  "rc_consistency": {
+    "consistency_rate": 0.780982999318575
+  },
+  "calibration": {
+    "ece_before": 0.0045907395065154614,
+    "ece_after": 0.009600704446831504,
+    "temperature": 0.9168466469793095
+  }
+}

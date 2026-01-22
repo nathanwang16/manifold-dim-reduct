@@ -1,0 +1,133 @@
+Cell 1 terminal:
+               family_v2  subcluster  gc_content  cpg_ratio  repeat_density  \
+1      promoter_polycomb           1    0.586067   0.687055        0.115706   
+2      promoter_polycomb           2    0.517822   0.556754        0.138625   
+3          enhancer_like           1    0.533529   0.425564        0.102706   
+4          enhancer_like           1    0.499880   0.379558        0.105323   
+5   background_repressed           2    0.435409   0.239488        0.106845   
+6   background_repressed           2    0.410318   0.213676        0.113977   
+7          enhancer_like           3    0.478898   0.240517        0.097509   
+8          enhancer_like           3    0.505565   0.249164        0.093923   
+9          enhancer_like           2    0.451015   0.196456        0.094658   
+10  background_repressed           2    0.408318   0.194845        0.111734   
+11         enhancer_like           2    0.451328   0.201102        0.096402   
+12         enhancer_like           3    0.473581   0.252984        0.091677   
+13  background_repressed           1    0.387080   0.180197        0.111407   
+14     promoter_polycomb           1    0.655048   0.730445        0.118086   
+15     promoter_polycomb           1    0.588348   0.455996        0.104787   
+16         enhancer_like           3    0.490509   0.252907        0.099941   
+17         enhancer_like           2    0.447213   0.212749        0.103847   
+18  background_repressed           1    0.387215   0.187838        0.111498   
+
+     entropy  
+1   1.895317  
+2   1.876829  
+3   1.938216  
+4   1.940942  
+5   1.936805  
+6   1.924700  
+7   1.949532  
+8   1.953773  
+9   1.951524  
+10  1.927829  
+11  1.946749  
+12  1.945266  
+13  1.912074  
+14  1.872677  
+15  1.927484  
+16  1.943873  
+17  1.936263  
+18  1.916445  
+
+cell 2 terminal:
+                                 gc_content  cpg_ratio  cpg_freq  \
+family_v2            subcluster                                    
+background_repressed 1             0.387147   0.184017  0.007567   
+                     2             0.418015   0.216003  0.010681   
+enhancer_like        1             0.516705   0.402561  0.030387   
+                     2             0.449852   0.203436  0.011060   
+                     3             0.487138   0.248893  0.015987   
+promoter_polycomb    1             0.609821   0.624499  0.063507   
+                     2             0.517822   0.556754  0.049444   
+
+                                 repeat_density   entropy  max_run_mean  \
+family_v2            subcluster                                           
+background_repressed 1                 0.111452  1.914260      5.881400   
+                     2                 0.110852  1.929778      6.236000   
+enhancer_like        1                 0.104015  1.939579      5.517800   
+                     2                 0.098302  1.944846      5.645733   
+                     3                 0.095762  1.948111      5.578850   
+promoter_polycomb    1                 0.112860  1.898493      5.292533   
+                     2                 0.138625  1.876829      6.184200   
+
+                                  H3_mean  motif_TATA_mean  motif_GCBOX_mean  \
+family_v2            subcluster                                                
+background_repressed 1           5.411804         0.283800          0.008400   
+                     2           5.453699         0.219200          0.018333   
+enhancer_like        1           5.481096         0.056700          0.102200   
+                     2           5.478473         0.127400          0.018067   
+                     3           5.464227         0.086250          0.039100   
+promoter_polycomb    1           5.368418         0.027867          0.278667   
+                     2           5.324142         0.178400          0.368000   
+
+                                 motif_AP1_mean  motif_ETS_mean  \
+family_v2            subcluster                                   
+background_repressed 1                 0.026200        0.177800   
+                     2                 0.042600        0.176733   
+enhancer_like        1                 0.038000        0.251900   
+                     2                 0.064867        0.230333   
+                     3                 0.035800        0.240700   
+promoter_polycomb    1                 0.021800        0.266733   
+                     2                 0.023800        0.200200   
+
+                                 motif_CPG_DENSE_mean    kmerPC1    kmerPC2  \
+family_v2            subcluster                                               
+background_repressed 1                       0.021200 -33.893092 -17.144240   
+                     2                       0.046000 -23.181114  -5.907394   
+enhancer_like        1                       0.408000  14.205410   4.592430   
+                     2                       0.040400 -15.620680   7.135554   
+                     3                       0.089400  -0.729650  16.479464   
+promoter_polycomb    1                       1.334933  48.276593  -5.977934   
+                     2                       1.060200  13.869575 -26.564905   
+
+                                  kmerPC3  
+family_v2            subcluster            
+background_repressed 1          -7.570290  
+                     2           5.935043  
+enhancer_like        1           3.257003  
+                     2          -0.717433  
+                     3          -0.743913  
+promoter_polycomb    1          -1.990983  
+                     2           1.922339  
+
+Members:
+('background_repressed', 1) -> [13, 18]
+('background_repressed', 2) -> [5, 6, 10]
+('enhancer_like', 1) -> [3, 4]
+('enhancer_like', 2) -> [9, 11, 17]
+('enhancer_like', 3) -> [7, 8, 12, 16]
+('promoter_polycomb', 1) -> [1, 14, 15]
+('promoter_polycomb', 2) -> [2]
+
+Cell 3 terminal:
+
+1 {'family_v2': 'promoter_polycomb', 'subcluster': 1, 'top3': [('TssBiv', 5.375937330534907), ('TssA', 5.145364796641888), ('ReprPC', 4.167309864427926)]}
+2 {'family_v2': 'promoter_polycomb', 'subcluster': 2, 'top3': [('TssBiv', 4.226385212786705), ('TssA', 3.980262255344046), ('ReprPC', 3.2339081702293644)]}
+3 {'family_v2': 'enhancer_like', 'subcluster': 1, 'top3': [('EnhBiv', 0.6299), ('EnhA1', 0.4574), ('EnhA2', 0.4574)]}
+4 {'family_v2': 'enhancer_like', 'subcluster': 1, 'top3': [('EnhBiv', 0.438), ('EnhA1', 0.3936), ('EnhA2', 0.3936)]}
+5 {'family_v2': 'background_repressed', 'subcluster': 2, 'top3': [('Het', 10.388106927763241), ('Tx', 2.332791630517283), ('TxWk', 2.332791630517283)]}
+6 {'family_v2': 'background_repressed', 'subcluster': 2, 'top3': [('Het', 10.367623645575968), ('Tx', 2.313738756216657), ('TxWk', 2.313738756216657)]}
+7 {'family_v2': 'enhancer_like', 'subcluster': 3, 'top3': [('EnhA1', 0.372), ('EnhA2', 0.372), ('EnhG1', 0.2521)]}
+8 {'family_v2': 'enhancer_like', 'subcluster': 3, 'top3': [('EnhA1', 0.4508), ('EnhA2', 0.4508), ('EnhG1', 0.2822)]}
+9 {'family_v2': 'enhancer_like', 'subcluster': 2, 'top3': [('EnhA1', 0.4517), ('EnhA2', 0.4517), ('EnhG1', 0.26890000000000003)]}
+10 {'family_v2': 'background_repressed', 'subcluster': 2, 'top3': [('Het', 10.22292649638995), ('Tx', 2.3605678080891628), ('TxWk', 2.3605678080891628)]}
+11 {'family_v2': 'enhancer_like', 'subcluster': 2, 'top3': [('EnhA1', 0.45910000000000006), ('EnhA2', 0.45910000000000006), ('EnhG1', 0.2766)]}
+12 {'family_v2': 'enhancer_like', 'subcluster': 3, 'top3': [('EnhA1', 0.34330000000000005), ('EnhA2', 0.34330000000000005), ('EnhG1', 0.22970000000000002)]}
+13 {'family_v2': 'background_repressed', 'subcluster': 1, 'top3': [('Het', 9.640129106910418), ('Tx', 2.467982865177912), ('TxWk', 2.467982865177912)]}
+14 {'family_v2': 'promoter_polycomb', 'subcluster': 1, 'top3': [('TssBiv', 6.823112440714071), ('TssA', 6.376134928856884), ('ReprPC', 5.320089952571257)]}
+15 {'family_v2': 'promoter_polycomb', 'subcluster': 1, 'top3': [('TssBiv', 2.9146904739230752), ('TssA', 2.86098856870769), ('ReprPC', 2.26919237913846)]}
+16 {'family_v2': 'enhancer_like', 'subcluster': 3, 'top3': [('EnhA1', 0.392), ('EnhA2', 0.392), ('EnhG1', 0.2704)]}
+17 {'family_v2': 'enhancer_like', 'subcluster': 2, 'top3': [('EnhA1', 0.3238), ('EnhA2', 0.3238), ('EnhG1', 0.2428)]}
+18 {'family_v2': 'background_repressed', 'subcluster': 1, 'top3': [('Het', 9.688916887995553), ('Tx', 2.474224994999941), ('TxWk', 2.474224994999941)]}
+
+Wrote: /content/drive/MyDrive/chromatin_phase8/label_refine_output_v2/label_state_candidates_v2.json

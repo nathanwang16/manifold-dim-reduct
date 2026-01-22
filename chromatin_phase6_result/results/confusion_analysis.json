@@ -1,0 +1,66 @@
+{
+  "confused_pairs": {
+    "n_pairs": 10,
+    "pairs": [
+      {
+        "label_i": 0,
+        "label_j": 13,
+        "confusion_score": 0.2881409248191255
+      },
+      {
+        "label_i": 8,
+        "label_j": 10,
+        "confusion_score": 0.26108839257628186
+      },
+      {
+        "label_i": 8,
+        "label_j": 9,
+        "confusion_score": 0.23018867924528302
+      },
+      {
+        "label_i": 12,
+        "label_j": 17,
+        "confusion_score": 0.2271154451085247
+      },
+      {
+        "label_i": 7,
+        "label_j": 15,
+        "confusion_score": 0.2220125786163522
+      },
+      {
+        "label_i": 8,
+        "label_j": 16,
+        "confusion_score": 0.2128930817610063
+      },
+      {
+        "label_i": 6,
+        "label_j": 8,
+        "confusion_score": 0.21226415094339623
+      },
+      {
+        "label_i": 7,
+        "label_j": 8,
+        "confusion_score": 0.2025794274929223
+      },
+      {
+        "label_i": 7,
+        "label_j": 14,
+        "confusion_score": 0.18527838943063857
+      },
+      {
+        "label_i": 13,
+        "label_j": 14,
+        "confusion_score": 0.18370556778861277
+      }
+    ]
+  },
+  "improvement": {
+    "original_accuracy": 0.17741512763615397,
+    "corrected_accuracy": 0.1768210647703248,
+    "improvement": -0.0005940628658291647,
+    "correction_rate": 0.31602397218387995,
+    "corrections_helped": 712,
+    "corrections_hurt": 746,
+    "corrections_neutral": 16629
+  }
+}

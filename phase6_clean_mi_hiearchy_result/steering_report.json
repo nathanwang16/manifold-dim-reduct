@@ -1,0 +1,207 @@
+{
+  "val_acc": 0.18817814896999982,
+  "rc_consistency_rate": 0.6087921304142715,
+  "confidence_threshold": 0.6,
+  "alphas": [
+    0.0,
+    0.25,
+    0.5,
+    0.75,
+    1.0,
+    1.5
+  ],
+  "evaluations": [
+    {
+      "name": "fine_within_family",
+      "result": {
+        "mode": "fine",
+        "target_id": 1,
+        "source_id": 0,
+        "n": 3160,
+        "baseline": {
+          "fine_acc": 0.2281645569620253,
+          "mean_target_prob_if_fine": 0.11278201639652252,
+          "mean_conf": 0.25141996145248413
+        },
+        "alphas": [
+          {
+            "alpha": 0.0,
+            "fine_acc": 0.2281645569620253,
+            "mean_conf": 0.25141996145248413,
+            "mean_target_prob": 0.11278201639652252,
+            "family_acc": 0.654113924050633,
+            "family_mean_conf": 0.6701198220252991
+          },
+          {
+            "alpha": 0.25,
+            "fine_acc": 0.23037974683544304,
+            "mean_conf": 0.24764618277549744,
+            "mean_target_prob": 0.11587344855070114,
+            "family_acc": 0.65,
+            "family_mean_conf": 0.6654722094535828
+          },
+          {
+            "alpha": 0.5,
+            "fine_acc": 0.23386075949367088,
+            "mean_conf": 0.24401268362998962,
+            "mean_target_prob": 0.11895966529846191,
+            "family_acc": 0.6427215189873418,
+            "family_mean_conf": 0.6607809662818909
+          },
+          {
+            "alpha": 0.75,
+            "fine_acc": 0.23765822784810126,
+            "mean_conf": 0.2405015379190445,
+            "mean_target_prob": 0.12203359603881836,
+            "family_acc": 0.6351265822784811,
+            "family_mean_conf": 0.6560540795326233
+          },
+          {
+            "alpha": 1.0,
+            "fine_acc": 0.24018987341772152,
+            "mean_conf": 0.23707623779773712,
+            "mean_target_prob": 0.12508775293827057,
+            "family_acc": 0.629746835443038,
+            "family_mean_conf": 0.6513291597366333
+          },
+          {
+            "alpha": 1.5,
+            "fine_acc": 0.24651898734177216,
+            "mean_conf": 0.23072393238544464,
+            "mean_target_prob": 0.1311052292585373,
+            "family_acc": 0.615506329113924,
+            "family_mean_conf": 0.6419087648391724
+          }
+        ]
+      }
+    },
+    {
+      "name": "fine_across_family",
+      "result": {
+        "mode": "fine",
+        "target_id": 12,
+        "source_id": 0,
+        "n": 3160,
+        "baseline": {
+          "fine_acc": 0.2281645569620253,
+          "mean_target_prob_if_fine": 0.018735161051154137,
+          "mean_conf": 0.25141996145248413
+        },
+        "alphas": [
+          {
+            "alpha": 0.0,
+            "fine_acc": 0.2281645569620253,
+            "mean_conf": 0.25141996145248413,
+            "mean_target_prob": 0.018735161051154137,
+            "family_acc": 0.654113924050633,
+            "family_mean_conf": 0.6701198220252991
+          },
+          {
+            "alpha": 0.25,
+            "fine_acc": 0.2281645569620253,
+            "mean_conf": 0.2465163618326187,
+            "mean_target_prob": 0.019822603091597557,
+            "family_acc": 0.6427215189873418,
+            "family_mean_conf": 0.6630507707595825
+          },
+          {
+            "alpha": 0.5,
+            "fine_acc": 0.2300632911392405,
+            "mean_conf": 0.24165408313274384,
+            "mean_target_prob": 0.020960863679647446,
+            "family_acc": 0.629746835443038,
+            "family_mean_conf": 0.6559730768203735
+          },
+          {
+            "alpha": 0.75,
+            "fine_acc": 0.23575949367088608,
+            "mean_conf": 0.2368151694536209,
+            "mean_target_prob": 0.022152001038193703,
+            "family_acc": 0.6158227848101265,
+            "family_mean_conf": 0.6489059925079346
+          },
+          {
+            "alpha": 1.0,
+            "fine_acc": 0.23607594936708862,
+            "mean_conf": 0.2320280224084854,
+            "mean_target_prob": 0.023398105055093765,
+            "family_acc": 0.6022151898734177,
+            "family_mean_conf": 0.641878604888916
+          },
+          {
+            "alpha": 1.5,
+            "fine_acc": 0.24525316455696203,
+            "mean_conf": 0.22255760431289673,
+            "mean_target_prob": 0.026063641533255577,
+            "family_acc": 0.5772151898734177,
+            "family_mean_conf": 0.6279703378677368
+          }
+        ]
+      }
+    },
+    {
+      "name": "fine_auto_source_to_label14",
+      "result": {
+        "mode": "fine",
+        "target_id": 13,
+        "source_id": null,
+        "n": 56722,
+        "baseline": {
+          "fine_acc": 0.1823983639504954,
+          "mean_target_prob_if_fine": 0.05460835620760918,
+          "mean_conf": 0.15904204547405243
+        },
+        "alphas": [
+          {
+            "alpha": 0.0,
+            "fine_acc": 0.1823983639504954,
+            "mean_conf": 0.15904204547405243,
+            "mean_target_prob": 0.05460835620760918,
+            "family_acc": 0.6334226578752512,
+            "family_mean_conf": 0.6171076893806458
+          },
+          {
+            "alpha": 0.25,
+            "fine_acc": 0.1821691759811008,
+            "mean_conf": 0.1578616052865982,
+            "mean_target_prob": 0.05652731657028198,
+            "family_acc": 0.6341983710024329,
+            "family_mean_conf": 0.6154467463493347
+          },
+          {
+            "alpha": 0.5,
+            "fine_acc": 0.18199287754310498,
+            "mean_conf": 0.1569184511899948,
+            "mean_target_prob": 0.05857254937291145,
+            "family_acc": 0.6336871055322449,
+            "family_mean_conf": 0.6137849688529968
+          },
+          {
+            "alpha": 0.75,
+            "fine_acc": 0.18030041253834492,
+            "mean_conf": 0.15621185302734375,
+            "mean_target_prob": 0.06075040251016617,
+            "family_acc": 0.6339339233454392,
+            "family_mean_conf": 0.6121294498443604
+          },
+          {
+            "alpha": 1.0,
+            "fine_acc": 0.17881950565917987,
+            "mean_conf": 0.15574011206626892,
+            "mean_target_prob": 0.06306738406419754,
+            "family_acc": 0.6326116850604704,
+            "family_mean_conf": 0.6104609966278076
+          },
+          {
+            "alpha": 1.5,
+            "fine_acc": 0.1762455484644406,
+            "mean_conf": 0.15551212430000305,
+            "mean_target_prob": 0.06814531981945038,
+            "family_acc": 0.6287154895807623,
+            "family_mean_conf": 0.607050895690918
+          }
+        ]
+      }
+    }
+  ]
+}

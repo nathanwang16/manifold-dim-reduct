@@ -1,0 +1,57 @@
+{
+  "confused_pairs": [
+    {
+      "label_i": 0,
+      "label_j": 13,
+      "score": 0.36552374960679457
+    },
+    {
+      "label_i": 14,
+      "label_j": 13,
+      "score": 0.3012578616352201
+    },
+    {
+      "label_i": 17,
+      "label_j": 12,
+      "score": 0.2650943396226415
+    },
+    {
+      "label_i": 5,
+      "label_j": 4,
+      "score": 0.21579112928593897
+    },
+    {
+      "label_i": 6,
+      "label_j": 4,
+      "score": 0.21540880503144655
+    },
+    {
+      "label_i": 2,
+      "label_j": 13,
+      "score": 0.21509433962264152
+    },
+    {
+      "label_i": 9,
+      "label_j": 4,
+      "score": 0.18836477987421385
+    },
+    {
+      "label_i": 10,
+      "label_j": 8,
+      "score": 0.18459119496855345
+    },
+    {
+      "label_i": 7,
+      "label_j": 14,
+      "score": 0.17767295597484276
+    },
+    {
+      "label_i": 5,
+      "label_j": 12,
+      "score": 0.1736395092796477
+    }
+  ],
+  "original_accuracy": 0.1911484632991456,
+  "corrected_accuracy": 0.19113099086191532,
+  "improvement": -1.7472437230270366e-05
+}

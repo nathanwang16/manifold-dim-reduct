@@ -16,8 +16,19 @@ logs/
 
 # Large data files
 **/*.npy
+**/*.npz
 
 # Model artifacts
 phase3_model/checkpoints/
 phase6_steering/cache/
 phase6_steering/results/
+
+# Result cache directories
+**/cache/
+chromatin_phase6_result/cache/
+chromatin_phase6_result/results/
+
+# Large CSV files in output directories
+label_identification_output/feature_data.csv
+phase8/label_identification_output/feature_data.csv
+phase8/label_identification_output_safe_anchors/feature_data.csv

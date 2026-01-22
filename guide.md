@@ -4,10 +4,12 @@
 
 This plan prioritizes **mechanistic understanding** and **interpretability** over raw performance optimization. The goal is not just to predict labels accurately, but to discover what biological patterns the model learns and to develop alignment techniques that could generalize beyond this competition.
 
-Notes: 
+Notes:
 
 1. All computational intensive code should utilize the mac m1 multi-core cpu. Alternatively MPS for parallel computing.
 2. Use demo datasets in "data" folder for all testings and initial runnings to quickly debug.
+3. For writing code aiming to be ran on colab, do not use python script execution as part of the script or use it anywhere else. It saves me time to simply copy and paste code that should have been grouped in a cell. Simply give me a clear breakline so that I know to stop and paste into the next cell. Simply write a python script that in the middle, use comments telling to stop and paste into the next cell, and I will know.
+
 
 ---
 
@@ -192,7 +194,7 @@ MOTIF DETECTION BLOCK (Interpretable)
 [Conv1D] 128 filters, kernel_size=19, padding='same', ReLU
          → Captures motifs up to 19bp (typical TF binding site length)
          → Output: (batch, 200, 128)
-       
+     
 [BatchNorm]
          → Stabilizes training; can be folded into conv for interpretation
 
@@ -232,7 +234,7 @@ DECISION BLOCK
 [Dense] 18 units, Softmax → Output class probabilities
 ```
 
-### ~~3.3 Architectural Variants for Comparison~~
+### 3.3 Architectural Variants for Comparison
 
 **Variant A: Shallow-Wide**
 
@@ -654,6 +656,36 @@ L_sparsity = mean(|hidden_activations|)  [L1 penalty]
 
 ---
 
+## Phase 8: Label Identification & Biological Mapping
+
+**Objective:** Map the abstract integer labels (1-18) to concrete biological chromatin states (e.g., Promoter, Enhancer, Heterochromatin).
+
+### 8.1 Feature Profiling
+
+1. **Sequence Property Extraction**:
+   - For every label cluster, compute distribution of:
+     - GC Content
+     - CpG Ratio (Observed/Expected)
+     - Repeat Density
+     - Entropy
+     - Max Homopolymer Run Length
+2. **Dimensionality Reduction & Clustering**:
+   - Visualize label clusters in the space of these engineered features.
+   - Observe grouping: e.g., CpG-rich labels vs. AT-rich labels.
+
+### 8.2 Hungarian Assignment
+
+1. **State Signatures**:
+   - Define expected feature profiles for known biological states (based on literature/ChromHMM).
+   - e.g., "Active Promoter" -> High GC, High CpG, Low Repeats.
+   - e.g., "Heterochromatin" -> Low GC, High Repeats.
+2. **Matching Algorithm**:
+   - Compute similarity matrix between Label Centroids and State Signatures.
+   - Use Hungarian Algorithm (linear sum assignment) to find the optimal 1-to-1 mapping that maximizes global similarity.
+   - Validation: Check if "Anchor" states (highly distinct profiles) map correctly.
+
+---
+
 ## Deliverables & Documentation
 
 ### For Competition Submission
@@ -687,3 +719,8 @@ L_sparsity = mean(|hidden_activations|)  [L1 penalty]
 - UMAP/PHATE visualizations with label coloring
 - Label cluster analysis and dendrogram
 - Predicted vs. actual confusion patterns
+
+**Biological Mapping Report:**
+- Final Label-to-State assignments
+- Confidence scores for each mapping
+- Feature distributions per state
