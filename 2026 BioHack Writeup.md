@@ -1,15 +1,15 @@
-# 2026 BioHack Writeup
+# 2026 BioHack Writeup: Mechanistic Interpretability On Bio application models
 
 **Proposed Pipeline**
 
 Phase 1: Genomic Data Engineering & Augmentation
 Phase 2: Exploratory Manifold Analysis, dimensional reduction
 Phase 3: Model: CNN
-Phase 4: Causal Patching
-Phase 5: Sparse Autoencoders for Feature Decomposition
+~~Phase 4: Causal Patching~~ (didn't actually implement for decreased return ratio)
+~~Phase 5: Sparse Autoencoders for Feature Decomposition~~ (didn't actually implement for decreased return ratio)
 Phase 6: Steering for Performance (Inference-Time Intervention)
 Phase 7: Diagnostics & Saliency
-Phase 8: Hacking (Enriching Metadata)
+Phase 8: Hacking (Enriching Metadata, then feed the dataset and classification hiearchy back into Phase 3, 6 & 7)
 
 
 
@@ -38,13 +38,13 @@ Claude sonnet: actually write most of the code
 ### Phase 2: Exploratory Manifold Analysis
 - Goal: understand dataset geometry before modeling; grouping labels on a manifold
 - Representation: 6-mer frequency vectors (4096-d) as "local vocabulary"
-- Methods: UMAP + PHATE (2D projections), plus PCA as baseline
+- Methods: UMAP + PHATE (2D projections), plus PCA as baseline. Note: dimensions in UMAP has no meaningful unit
 - no 18 clean clusters; continuous landscape with gradients
 - Key axis: GC-content gradient (promoter-like vs heterochromatin-like), yet still minority contribution
 
-![pca_2d](file:///Users/xiaoyuwang/Desktop/manifold-dim-reduct/phase2_results/figures/pca_2d.png)
+![pca_2d](file:///Users/xiaoyuwang/Desktop/manifold-dim-reduct/results/phase2_manifold/figures/pca_2d.png)
 
-![umap_n15_d0.1_2d](file:///Users/xiaoyuwang/Desktop/manifold-dim-reduct/phase2_results/figures/umap_n15_d0.1_2d.png)
+![umap_n15_d0.1_2d](file:///Users/xiaoyuwang/Desktop/manifold-dim-reduct/results/phase2_manifold/figures/umap_n15_d0.1_2d.png)
 
 
 
@@ -52,160 +52,143 @@ Claude sonnet: actually write most of the code
 - Goal: transparency-first model; easy to interpret motifs and decisions
 - Core: 1D-CNN motif scanners (first conv: 128 filters, kernel ~19bp)
 - Pooling: global max pooling for position invariance (paired with jittering/RC augmentation)
-- SAE attachment: explicit bottleneck layer chosen as the interpretability socket
+- Bottleneck layer: explicit 256-d bottleneck after global pooling, chosen as the activation extraction point for all downstream MI analysis (steering vectors, linear probes, saliency)
 
 
 
-### Phase 4 & 5: Interpretability -> Sparse Autoencoder (SAE) Feature Decomposition
-- Goal: convert internal activations into clean, human-readable features
-- SAE: train on bottleneck activations; expand into sparse, overcomplete dictionary (e.g., 4096 features)
-- Outputs: feature→label association profiles; top-activating sequences/windows per feature
-- SAE didn't form linear representation of the learnable features. May be the model itself learns and perform very poorly (15% acc).
+### Phase 4 & 5: ~~Sparse Autoencoder (SAE) Feature Decomposition~~ & ~~Causal Patching~~ (Not Implemented)
+
+**What SAEs are:** A Sparse Autoencoder is trained on a model's intermediate activations to decompose them into an overcomplete, sparsely-activated dictionary of features. The idea (from Anthropic's mechanistic interpretability research) is that neural network activations are "superpositions" of many concepts packed into fewer dimensions. An SAE expands e.g. a 256-d bottleneck into 4096+ sparse features, where each feature ideally corresponds to one interpretable concept — a "monosemantic" unit. In our context, an SAE on the CNN bottleneck would ideally yield features like "TATA-box detector," "CpG-island indicator," or "AT-repeat scanner" that cleanly map onto biological motifs.
+
+**What causal patching is:** Causal patching (activation patching) involves running the model on two different inputs, then surgically replacing an activation from one run into the other to see if the output flips. This identifies which internal components are *causally responsible* for a specific prediction — not just correlated, but necessary.
+
+**Why we didn't implement either, in hindsight:** Both techniques require a model that has learned meaningful internal structure to decompose or patch. Our CNN achieved ~19% accuracy on 18 classes — it learned coarse family-level groupings but had very poor fine-grained discrimination. Linear probing on the bottleneck confirmed this: a family-level probe reached 63% but a fine-label probe could only reach 18.6% (no better than the model itself). SAE feature decomposition on such weak representations would yield noisy, uninterpretable features rather than clean monosemantic units. Causal patching would similarly be uninformative — you can't isolate "the circuit for state X" when the model barely distinguishes state X from most other states. The return on implementation effort was not justified given the model's performance floor.
 
 
 
-### Phase 6: Alignment -> Steering for Performance
-- Goal: improve predictions without retraining by intervening on internal representations
-- Trigger: low-confidence / near-tie predictions (often between biologically adjacent labels)
-- Representation: compute per-label mean activation vectors at a chosen layer (e.g., bottleneck or pooled)
-- Steering vector: \(v_{A \to B} = \mu_B - \mu_A\)
-- Inference rule: add small \(\alpha \cdot v\) at the layer, re-run forward pass, compare confidence shift
-- didn't give significant difference. Model itself learned poorly. 
+### Phase 6: Activation Vector Steering (Inference-Time Intervention)
+**Goal:** Improve predictions without retraining by intervening directly on internal representations at inference time. This is a form of "representation engineering" — if we know what direction in activation space corresponds to each class, we can nudge uncertain predictions along that direction.
+
+**What activation vector steering is:**
+1. **Extract activations:** Run all training sequences through the model and cache the bottleneck-layer activations (256-d vectors after global pooling).
+2. **Compute label centroids:** For each of the 18 labels, compute \(\mu_k\) = mean activation vector across all training samples of label \(k\).
+3. **Define steering vectors:** The vector from label \(A\) to label \(B\) is \(v_{A \to B} = \mu_B - \mu_A\). This is the direction in activation space that, in principle, shifts from "A-like" to "B-like."
+4. **Apply at inference:** For a sample where the model is uncertain (confidence < threshold), add \(\alpha \cdot v_{pred \to target}\) to its bottleneck activation, then re-run only the classifier head. If steering toward a competing label increases confidence more than reinforcing the original prediction, flip the label.
+
+**What we ran:**
+- Tested steering strengths \(\alpha \in \{0, 0.25, 0.5, 0.75, 1.0, 1.5\}\) on validation data
+- Evaluated both within-family steering (e.g., label 0 → label 1, both promoter_polycomb) and across-family steering (e.g., label 0 → label 12, promoter → enhancer)
+- Ran contrastive steering: automatically identified the top 10 most-confused label pairs from the confusion matrix, then attempted bidirectional correction on uncertain samples
+
+**Results:**
+- Baseline validation accuracy: **18.8%** (clean model) / **19.1%** (improved model)
+- Within-family steering at \(\alpha=1.5\): fine-class accuracy increased marginally from 22.8% → 24.7% (+1.9pp), but family-level accuracy *dropped* from 65.4% → 61.6% (−3.8pp)
+- Contrastive steering on the improved model: overall accuracy change of **−0.002%** (essentially zero, slightly harmful)
+- Across-family steering showed the same pattern: marginal fine-accuracy gains at the cost of family-accuracy degradation
+
+**How to interpret this:** The steering vectors are geometrically real — label centroids do occupy different regions of activation space (within-family distance ~2.4 vs. across-family ~5.5). But steering didn't improve predictions because the model's bottleneck representations lack enough discriminative information. Nudging an activation toward a class centroid just redistributes errors rather than resolving them. The finding is itself informative: it quantitatively confirms that the model's failure is in representation quality, not in decision boundary placement.
+
+<!-- TODO: insert image of centroid distance heatmap or PCA of label centroids if available -->
 
 
 
 ### Phase 7: Diagnostics & Saliency
-- Goal: verify the model uses biologically meaningful sequence evidence (not artifacts)
-- Tools: saliency/attribution maps (DeepLIFT-style), confusion matrix inspection
-- Confusion analysis: most confusions are between manifold neighbors (consistent with Phase 2)
-- What to show in writeup: 2–3 example saliency maps + confusion matrix / top confusion pairs
 
-  "confused_pairs": {
+**Goal:** Verify whether the model uses biologically meaningful sequence features, and characterize its failure modes.
 
-​    "n_pairs": 10,
+**Tools & Methods:**
+- Input × Gradient saliency maps: compute gradient of a target class logit w.r.t. input nucleotides, then multiply element-wise by the input (highlights positions the model is "looking at")
+- Confusion matrix analysis: identify which label pairs the model confuses most
+- Aggregate saliency profiles per class: average saliency across many correctly-classified examples to see if position-level importance patterns differ by state
 
-​    "pairs": [
+**Confusion analysis — top confused pairs (clean model, 0-indexed):**
 
-​      {
+| True Label | Predicted Label | Confusion Score |
+|:----------:|:---------------:|:---------------:|
+| 12         | 17              | 0.733           |
+| 9          | 17              | 0.629           |
+| 5          | 17              | 0.618           |
+| 4          | 17              | 0.531           |
+| 10         | 17              | 0.497           |
 
-​        "label_i": 12,
+Many labels collapse into label 17 (enhancer_sub2), suggesting the model defaults to a dominant mode when uncertain. After adding hierarchy data, the improved model's confusions shifted to more biologically local pairs (e.g., label 0 ↔ 13, label 14 ↔ 13 — both within promoter_polycomb/background boundary).
 
-​        "label_j": 17,
+**Alignment metrics:**
+- RC consistency: 60.9% (clean) → 78.1% (improved) — meaning 22–39% of predictions flip on reverse complement, indicating fragile position-dependent features
+- Monotonicity test (TATA box): score = 0.0 — strengthening a TATA motif did not increase promoter-label confidence at all, confirming the model has not learned to use known biological motifs
+- Calibration ECE: 0.005 before / 0.010 after temperature scaling — trivially low because the model outputs near-uniform distributions (~16% mean confidence on 18 classes)
 
-​        "confusion_score": 0.7327044025157232
+![confusion_matrix](file:///Users/xiaoyuwang/Desktop/manifold-dim-reduct/results/phase6_hierarchy/figures/confusion_matrix.png)
 
-​      },
+![pca_family](file:///Users/xiaoyuwang/Desktop/manifold-dim-reduct/results/phase6_hierarchy/figures/pca_family.png)
 
-​      {
+PCA of bottleneck activations colored by family assignment. Coarse family structure is visible, but fine-grained label separation is absent.
 
-​        "label_i": 9,
-
-​        "label_j": 17,
-
-​        "confusion_score": 0.6286163522012579
-
-​      },
-
-​      {
-
-​        "label_i": 5,
-
-​        "label_j": 17,
-
-​        "confusion_score": 0.6179245283018868
-
-​      },
-
-​      {
-
-​        "label_i": 4,
-
-​        "label_j": 17,
-
-​        "confusion_score": 0.5312991506763133
-
-​      },
-
-​      {
-
-​        "label_i": 10,
-
-​        "label_j": 17,
-
-​        "confusion_score": 0.497011638880151
-
-​      },
-
-![confusion_matrix](file:///Users/xiaoyuwang/Desktop/manifold-dim-reduct/phase6_clean_mi_hiearchy_result/figures/confusion_matrix.png)
-
-![pca_family](file:///Users/xiaoyuwang/Desktop/manifold-dim-reduct/phase6_clean_mi_hiearchy_result/figures/pca_family.png)
-
-PCA dimentional reduction after hiearchical data being added. Families are easier to distinguish. 
+<!-- TODO: insert saliency map examples from phase7_diagnostics output if available -->
 
 
 
-### Phase 8: Hacking (Enriching Metadata) -> families + subclasses
+### Phase 8: Enriching Metadata — Label Identification & Hierarchy Construction
 
-- Goal: recover biological meaning of abstract labels (1–18) to enable domain info
-- Step 1: per-label feature profiling
-  - GC content
-  - CpG observed/expected ratio + CpG frequency
-  - repeat density / low-complexity indicators
-  - entropy / homopolymer runs (sanity checks)
-- Step 2: report + sanity checks
-  - highest CpG ratio label should map to promoter-like state (TssA/TssBiv)
-  - lowest GC / high repeat-density label should map to Het / ZnfRpts-like state
-- Results (examples used for anchoring)
-  - Label 14 → TssA (Active Promoter): high GC (~0.66), high CpG ratio (~0.74)
-  - Label 2 → Het (Heterochromatin): high repeat density / low complexity
-  - Label 18 → ReprPCWk (Weak Polycomb): repressive signature (weaker Polycomb-like)
-- Impact on competition workflow
-  - enable Phase 6 steering: steer along biologically meaningful directions, not arbitrary label IDs
-  - No significant improvement on model's performance
+**Goal:** The competition labels are abstract integers (1–18) with no biological annotation. To make MI results interpretable and to enable biologically-informed steering, we needed to map each label to its likely chromatin state identity.
 
-Result
+**Method:**
+1. **Per-label feature profiling:** For each of the 18 labels, compute mean sequence-level features across ~6,000 stratified samples: GC content, CpG observed/expected ratio, CpG dinucleotide frequency, repeat density (homopolymer + dinucleotide tandem runs), and Shannon entropy.
+2. **Expected state prototypes:** Define literature-based feature profiles for all 18 Roadmap Epigenomics states (e.g., TssA expects high GC ~0.65, high CpG ratio ~0.85; Het expects low GC ~0.35, high repeat density ~0.45).
+3. **Anchor assignment:** Identify high-confidence anchors heuristically — the label with the highest CpG ratio is almost certainly TssA; the one with the lowest GC + highest repeats is Het; etc.
+4. **Hungarian matching:** Z-score normalize observed label profiles and expected prototypes, compute Euclidean distance matrix, then use the Hungarian algorithm (scipy `linear_sum_assignment`) for optimal 1-to-1 matching of the remaining labels to states.
+5. **Hierarchy construction:** Group the 18 matched states into 3 families (promoter_polycomb, enhancer_like, background_repressed) and 7 subclusters. Feed this hierarchy back into Phase 6 (family-level steering, family-level accuracy tracking) and Phase 7 (confusion analysis by family).
 
-  "1": {"family": "promoter_polycomb", "subcluster": 1, "name_hint": "TssBiv_or_ReprPC_like"},
+**Key identification results:**
 
-  "2": {"family": "promoter_polycomb", "subcluster": 2, "name_hint": "TssFlnk_like"},
+| Label | Mapped State | GC Content | CpG Ratio | Repeat Density | Confidence Margin |
+|:-----:|:------------:|:----------:|:---------:|:--------------:|:-----------------:|
+| 14    | TssA         | 0.657      | 0.741     | 0.119          | 0.147             |
+| 1     | ReprPC       | 0.582      | 0.683     | 0.116          | 0.264             |
+| 2     | Het          | 0.517      | 0.551     | 0.137          | 0.556             |
+| 13    | Quies        | 0.389      | 0.181     | 0.113          | 0.147             |
+| 18    | ReprPCWk     | 0.387      | 0.188     | 0.111          | 0.157             |
 
-  "3": {"family": "enhancer_like", "subcluster": 1, "name_hint": "enhancer_sub1"},
+Extreme states (TssA, Het, Quies) were identified with reasonable confidence. Middle states (various enhancer subtypes) had very small margins (<0.02), reflecting genuine biological similarity in their sequence composition.
 
-  "4": {"family": "enhancer_like", "subcluster": 1, "name_hint": "enhancer_sub1"},
+**Family hierarchy output:**
 
-  "5": {"family": "background_repressed", "subcluster": 2, "name_hint": "background_sub2"},
-
-  "6": {"family": "background_repressed", "subcluster": 2, "name_hint": "background_sub2"},
-
-  "7": {"family": "enhancer_like", "subcluster": 3, "name_hint": "enhancer_sub3"},
-
-  "8": {"family": "enhancer_like", "subcluster": 3, "name_hint": "enhancer_sub3"},
-
-  "9": {"family": "enhancer_like", "subcluster": 2, "name_hint": "enhancer_sub2"},
-
+```json
+{
+  "1":  {"family": "promoter_polycomb",    "subcluster": 1, "name_hint": "TssBiv_or_ReprPC_like"},
+  "2":  {"family": "promoter_polycomb",    "subcluster": 2, "name_hint": "TssFlnk_like"},
+  "3":  {"family": "enhancer_like",        "subcluster": 1, "name_hint": "enhancer_sub1"},
+  "4":  {"family": "enhancer_like",        "subcluster": 1, "name_hint": "enhancer_sub1"},
+  "5":  {"family": "background_repressed", "subcluster": 2, "name_hint": "background_sub2"},
+  "6":  {"family": "background_repressed", "subcluster": 2, "name_hint": "background_sub2"},
+  "7":  {"family": "enhancer_like",        "subcluster": 3, "name_hint": "enhancer_sub3"},
+  "8":  {"family": "enhancer_like",        "subcluster": 3, "name_hint": "enhancer_sub3"},
+  "9":  {"family": "enhancer_like",        "subcluster": 2, "name_hint": "enhancer_sub2"},
   "10": {"family": "background_repressed", "subcluster": 2, "name_hint": "background_sub2"},
-
-  "11": {"family": "enhancer_like", "subcluster": 2, "name_hint": "enhancer_sub2"},
-
-  "12": {"family": "enhancer_like", "subcluster": 3, "name_hint": "enhancer_sub3"},
-
+  "11": {"family": "enhancer_like",        "subcluster": 2, "name_hint": "enhancer_sub2"},
+  "12": {"family": "enhancer_like",        "subcluster": 3, "name_hint": "enhancer_sub3"},
   "13": {"family": "background_repressed", "subcluster": 1, "name_hint": "background_sub1"},
-
-  "14": {"family": "promoter_polycomb", "subcluster": 1, "name_hint": "TssA_like"},
-
-  "15": {"family": "promoter_polycomb", "subcluster": 1, "name_hint": "promoter_polycomb_sub1"},
-
-  "16": {"family": "enhancer_like", "subcluster": 3, "name_hint": "enhancer_sub3"},
-
-  "17": {"family": "enhancer_like", "subcluster": 2, "name_hint": "enhancer_sub2"},
-
+  "14": {"family": "promoter_polycomb",    "subcluster": 1, "name_hint": "TssA_like"},
+  "15": {"family": "promoter_polycomb",    "subcluster": 1, "name_hint": "promoter_polycomb_sub1"},
+  "16": {"family": "enhancer_like",        "subcluster": 3, "name_hint": "enhancer_sub3"},
+  "17": {"family": "enhancer_like",        "subcluster": 2, "name_hint": "enhancer_sub2"},
   "18": {"family": "background_repressed", "subcluster": 1, "name_hint": "background_sub1"}
+}
+```
+
+**Linear probing validated the hierarchy:** A linear probe on the model's bottleneck activations achieved 63.1% accuracy at the family level (3 classes) vs. only 18.6% at the fine label level (18 classes). This confirms the model's representations capture coarse biological structure but lack the resolution for fine-grained state discrimination. Confusion analysis showed 50.5% of errors within-family vs. 49.5% across-family — roughly chance-level, meaning the model's errors are not preferentially between biologically similar states.
 
 
 
-Conclusion:
+### Conclusion
 
-Model's poor performance distracts meaning for much mechanistic interpretability research. Yet steering, patching and dimensional reduction gives quantitative insights on expected range of performance for any models on the task
+The model's poor performance (~19% accuracy, where random is 5.6%) was the dominant constraint on every MI experiment. Activation vector steering, confusion analysis, linear probing, and saliency maps all converge on the same finding: the CNN learns coarse family-level structure in its bottleneck (promoter-like vs. enhancer-like vs. background/repressed) but cannot resolve fine-grained distinctions within families. Steering vectors are geometrically real but act on representations too weak to move predictions meaningfully.
 
-Interpretability may potentially serve as valuable insight leverage for standard dry lab procedures
+That said, MI was not wasted effort — it produced concrete, quantitative diagnostics that no amount of accuracy-chasing would have revealed:
+- **Linear probing** established that the bottleneck's information ceiling is ~63% at the family level, directly explaining why fine-label accuracy plateaus near random
+- **Steering analysis** confirmed the failure is in representation quality, not decision boundary placement — useful for deciding whether to invest in better features vs. bigger classifiers
+- **Label identification + hierarchy** recovered biological structure from abstract competition labels, and the family-level PCA visualization validated that the manifold geometry from Phase 2 is echoed in learned representations
+- **RC consistency and monotonicity** quantified specific failure modes (strand sensitivity, motif blindness) that inform architecture choices for future iterations
+
+The broader takeaway: mechanistic interpretability on weak models yields "diagnostic interpretability" — it tells you *why* the model fails and *where* the information bottleneck lies, even if it cannot yet reveal meaningful learned circuits. For computational biology workflows, this diagnostic function may be as valuable as the circuit-level interpretability that MI achieves on stronger models.
 
