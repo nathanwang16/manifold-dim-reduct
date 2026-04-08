@@ -75,20 +75,63 @@ Claude sonnet: actually write most of the code
 3. **Define steering vectors:** The vector from label \(A\) to label \(B\) is \(v_{A \to B} = \mu_B - \mu_A\). This is the direction in activation space that, in principle, shifts from "A-like" to "B-like."
 4. **Apply at inference:** For a sample where the model is uncertain (confidence < threshold), add \(\alpha \cdot v_{pred \to target}\) to its bottleneck activation, then re-run only the classifier head. If steering toward a competing label increases confidence more than reinforcing the original prediction, flip the label.
 
-**What we ran:**
-- Tested steering strengths \(\alpha \in \{0, 0.25, 0.5, 0.75, 1.0, 1.5\}\) on validation data
-- Evaluated both within-family steering (e.g., label 0 → label 1, both promoter_polycomb) and across-family steering (e.g., label 0 → label 12, promoter → enhancer)
-- Ran contrastive steering: automatically identified the top 10 most-confused label pairs from the confusion matrix, then attempted bidirectional correction on uncertain samples
+**We ran three separate evaluation campaigns across two model versions.**
 
-**Results:**
-- Baseline validation accuracy: **18.8%** (clean model) / **19.1%** (improved model)
-- Within-family steering at \(\alpha=1.5\): fine-class accuracy increased marginally from 22.8% → 24.7% (+1.9pp), but family-level accuracy *dropped* from 65.4% → 61.6% (−3.8pp)
-- Contrastive steering on the improved model: overall accuracy change of **−0.002%** (essentially zero, slightly harmful)
-- Across-family steering showed the same pattern: marginal fine-accuracy gains at the cost of family-accuracy degradation
+**Run 1 — Original ChromatinCNN (1024-d bottleneck):** Validation accuracy 17.7%, RC consistency 57.2%. Contrastive steering identified the top 10 confused pairs (label 0 ↔ 13 at 28.8%, label 8 ↔ 10 at 26.1%, etc.) and applied bidirectional correction at confidence threshold 0.6. Result: corrections were applied to 31.6% of samples, but 746 were hurt vs. 712 helped (16,629 neutral). Net improvement: **−0.06%** (slightly harmful).
 
-**How to interpret this:** The steering vectors are geometrically real — label centroids do occupy different regions of activation space (within-family distance ~2.4 vs. across-family ~5.5). But steering didn't improve predictions because the model's bottleneck representations lack enough discriminative information. Nudging an activation toward a class centroid just redistributes errors rather than resolving them. The finding is itself informative: it quantitatively confirms that the model's failure is in representation quality, not in decision boundary placement.
+**Run 2 — Clean model with family hierarchy (512-d bottleneck):** Validation accuracy 18.8%, family accuracy 63.6%, RC consistency 60.9%. This run tested directed steering with \(\alpha \in \{0, 0.25, 0.5, 0.75, 1.0, 1.5\}\) in three experiments:
 
-<!-- TODO: insert image of centroid distance heatmap or PCA of label centroids if available -->
+*Experiment A — Within-family steering (label 0 → label 1, both promoter_polycomb, n=3,160):*
+
+| \(\alpha\) | Fine Accuracy | Family Accuracy | Target Prob | Mean Confidence |
+|:------:|:-------------:|:---------------:|:-----------:|:---------------:|
+| 0.00   | 22.8%         | 65.4%           | 0.113       | 0.251           |
+| 0.50   | 23.4%         | 64.3%           | 0.119       | 0.244           |
+| 1.00   | 24.0%         | 63.0%           | 0.125       | 0.237           |
+| 1.50   | 24.7%         | 61.6%           | 0.131       | 0.231           |
+
+Fine accuracy rises +1.9pp but family accuracy drops −3.8pp — each unit of fine-label improvement costs ~2 units of family accuracy.
+
+*Experiment B — Across-family steering (label 0 → label 12, promoter → enhancer, n=3,160):*
+
+| \(\alpha\) | Fine Accuracy | Family Accuracy | Target Prob | Mean Confidence |
+|:------:|:-------------:|:---------------:|:-----------:|:---------------:|
+| 0.00   | 22.8%         | 65.4%           | 0.019       | 0.251           |
+| 0.50   | 23.0%         | 63.0%           | 0.021       | 0.242           |
+| 1.00   | 23.6%         | 60.2%           | 0.023       | 0.232           |
+| 1.50   | 24.5%         | 57.7%           | 0.026       | 0.223           |
+
+Across-family steering is even more destructive: family accuracy drops −7.7pp to push fine accuracy up +1.7pp. Target probability barely moves (0.019 → 0.026).
+
+*Experiment C — Global steering toward label 14 (TssA, auto-source, n=56,722):*
+
+| \(\alpha\) | Fine Accuracy | Family Accuracy | Target Prob | Mean Confidence |
+|:------:|:-------------:|:---------------:|:-----------:|:---------------:|
+| 0.00   | 18.2%         | 63.3%           | 0.055       | 0.159           |
+| 0.50   | 18.2%         | 63.4%           | 0.059       | 0.157           |
+| 1.00   | 17.9%         | 63.3%           | 0.063       | 0.156           |
+| 1.50   | 17.6%         | 62.9%           | 0.068       | 0.156           |
+
+On the full validation set, steering toward the model's best-separated class (TssA) actually *decreases* accuracy. Mean confidence is only ~16% across 18 classes — near uniform.
+
+**Run 3 — Improved ChromatinCNNAttention (256-d bottleneck):** Validation accuracy 19.1%, RC consistency 78.1%. Contrastive steering on this model's top 10 confused pairs (label 0 ↔ 13 at 36.6%, label 14 ↔ 13 at 30.1%, label 17 ↔ 12 at 26.5%) produced: original accuracy 19.115%, corrected accuracy 19.113%. Net improvement: **−0.002%**.
+
+**Representation geometry (from MI analysis):**
+
+| Metric | Value |
+|:-------|:-----:|
+| Bottleneck dimension | 512 |
+| Within-family centroid distance (mean) | 2.38 |
+| Across-family centroid distance (mean) | 5.53 |
+| Within/across ratio | 0.43 |
+| Mistakes within-family | 50.5% |
+| Mistakes across-family | 49.5% |
+| Linear probe — family (3 classes) | 63.1% val |
+| Linear probe — subcluster (7 classes) | 37.9% val |
+| Linear probe — fine label (18 classes) | 18.6% val |
+
+**How to interpret this:** The steering vectors are geometrically real — label centroids do separate in activation space (within-family distance ~2.4 vs. across-family ~5.5, ratio 0.43). But every steering experiment shows the same pattern: target probability nudges up slightly while overall accuracy stays flat or drops. The linear probes confirm why: the bottleneck's information ceiling is ~63% for 3-class family prediction and only ~18.6% for fine labels (no better than the model itself). Steering cannot conjure discriminative information that the representations never learned. The 50/50 within- vs. across-family mistake split further shows that the model's errors are not structured along biological lines — they are effectively random confusions, leaving no systematic pattern for steering to exploit.
+
 
 
 
@@ -114,7 +157,7 @@ Claude sonnet: actually write most of the code
 Many labels collapse into label 17 (enhancer_sub2), suggesting the model defaults to a dominant mode when uncertain. After adding hierarchy data, the improved model's confusions shifted to more biologically local pairs (e.g., label 0 ↔ 13, label 14 ↔ 13 — both within promoter_polycomb/background boundary).
 
 **Alignment metrics:**
-- RC consistency: 60.9% (clean) → 78.1% (improved) — meaning 22–39% of predictions flip on reverse complement, indicating fragile position-dependent features
+- Reverse-Compliment Strand consistency: 60.9% (clean) → 78.1% (improved) — meaning 22–39% of predictions flip on reverse complement, indicating fragile position-dependent features
 - Monotonicity test (TATA box): score = 0.0 — strengthening a TATA motif did not increase promoter-label confidence at all, confirming the model has not learned to use known biological motifs
 - Calibration ECE: 0.005 before / 0.010 after temperature scaling — trivially low because the model outputs near-uniform distributions (~16% mean confidence on 18 classes)
 
@@ -124,7 +167,7 @@ Many labels collapse into label 17 (enhancer_sub2), suggesting the model default
 
 PCA of bottleneck activations colored by family assignment. Coarse family structure is visible, but fine-grained label separation is absent.
 
-<!-- TODO: insert saliency map examples from phase7_diagnostics output if available -->
+
 
 
 
@@ -133,6 +176,7 @@ PCA of bottleneck activations colored by family assignment. Coarse family struct
 **Goal:** The competition labels are abstract integers (1–18) with no biological annotation. To make MI results interpretable and to enable biologically-informed steering, we needed to map each label to its likely chromatin state identity.
 
 **Method:**
+
 1. **Per-label feature profiling:** For each of the 18 labels, compute mean sequence-level features across ~6,000 stratified samples: GC content, CpG observed/expected ratio, CpG dinucleotide frequency, repeat density (homopolymer + dinucleotide tandem runs), and Shannon entropy.
 2. **Expected state prototypes:** Define literature-based feature profiles for all 18 Roadmap Epigenomics states (e.g., TssA expects high GC ~0.65, high CpG ratio ~0.85; Het expects low GC ~0.35, high repeat density ~0.45).
 3. **Anchor assignment:** Identify high-confidence anchors heuristically — the label with the highest CpG ratio is almost certainly TssA; the one with the lowest GC + highest repeats is Het; etc.
