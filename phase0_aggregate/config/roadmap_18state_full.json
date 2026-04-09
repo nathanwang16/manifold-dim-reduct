@@ -1,0 +1,19 @@
+{
+  "phase_root": "phase0_aggregate/data/roadmap_18state_full",
+  "metadata_tsv_url": "https://docs.google.com/spreadsheets/d/0Am6FxqAtrFDwdHU1UC13ZUxKYy1XVEJPUzV6MEtQOXc/export?format=tsv&gid=15",
+  "bed_base_url": "https://egg2.wustl.edu/roadmap/data/byFileType/chromhmmSegmentations/ChmmModels/core_K27ac/jointModel/final",
+  "chain_url": "https://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz",
+  "hg38_fa_gz_url": "https://hgdownload.gi.ucsc.edu/goldenPath/hg38/bigZips/latest/hg38.fa.gz",
+  "hg19_fa_gz_url": "https://hgdownload.cse.ucsc.edu/goldenPath/hg19/bigZips/latest/hg19.fa.gz",
+  "liftover_binary_url": "https://hgdownload.soe.ucsc.edu/admin/exe/macOSX.arm64/liftOver",
+  "liftover_min_match": 0.95,
+  "download_workers": 4,
+  "per_state_cap": 50000,
+  "entropy_threshold": 0.5,
+  "minority_states": [12, 14, 15],
+  "reverse_complement_minority_states": true,
+  "cleanup_plain_beds_after_compression": true,
+  "keep_hg19_reference_gz": true,
+  "force_rebuild_merged": true,
+  "random_seed": 20260408
+}

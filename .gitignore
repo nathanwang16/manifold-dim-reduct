@@ -6,6 +6,9 @@ CLAUDE.md
 # Large directories
 data/
 logs/
+phase0_aggregate/data/
+phase0_aggregate/logs/
+phase0_aggregate/tools/
 
 # Editor
 .vscode/

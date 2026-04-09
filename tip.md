@@ -134,3 +134,27 @@ nohup python -m phase3_model.run_phase3 \
 Bug "OSError: [Errno 24] Too many open files". This error occurs when the DataLoader creates worker processes that don't properly clean up file descriptors between epochs.
 
 solve: The DataLoader with multiprocessing workers is accumulating file descriptors across epochs. The problem is that workers aren't being properly cleaned up between training and validation phases. 
+
+---
+
+## Bug: Roadmap `mnemonics.bed.gz` Files Are Merged Segments
+
+**Date**: 2026-04-08
+
+**Problem**:
+The Roadmap 18-state `*_mnemonics.bed.gz` files are not already expanded into one 200bp bin per line. They contain merged variable-length segments, and the raw chromosome order is not guaranteed to be stable for downstream liftOver.
+
+**Root Cause**:
+- Adjacent 200bp ChromHMM bins with the same state are collapsed by the source release into longer BED intervals
+- The live source ordering is not guaranteed to match the lexicographic BED sort assumed by the preprocessing guide
+
+**Solution**:
+- Expand each valid segment into 200bp bins during normalization
+- Reject any segment whose length is not a positive multiple of 200
+- Sort the expanded normalized BED before liftOver whenever source-order violations are detected
+
+**Files Modified**:
+- `phase0_aggregate/roadmap_pipeline.py`
+
+**Key Insight**:
+For the Roadmap 18-state release, the correct normalization target is the expanded 200bp bin representation, not the raw merged mnemonic segments.

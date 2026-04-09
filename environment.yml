@@ -22,4 +22,5 @@ dependencies:
     - dash>=2.11.0
     - deeplift>=0.6.13.0
     - captum>=0.6.0
+    - pyfaidx
 

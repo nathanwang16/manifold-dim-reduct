@@ -8,6 +8,7 @@ Because the labels are provided as abstract integers (1–18), this solution emp
 
 ```
 manifold-dim-reduct/
+├── phase0_aggregate/    # Roadmap download, liftOver, and corpus assembly
 ├── phase1_filter/       # Data engineering & augmentation
 ├── phase2_manifold/     # Manifold learning (UMAP/PHATE) & visualization
 ├── phase3_model/        # Main CNN model (training & inference)
@@ -19,6 +20,10 @@ manifold-dim-reduct/
 ```
 
 ## Key Components
+
+### 0. Dataset Aggregation (`phase0_aggregate/`)
+- Downloads the full Roadmap 18-state `core_K27ac` release, metadata, hg19->hg38 chain, and hg38 reference FASTA.
+- Expands merged ChromHMM segments into 200bp bins, lifts them to hg38, extracts sequences, and assembles merged train/val/test corpora.
 
 ### 1. Data Engineering (`phase1_filter/`)
 - **Reverse Complement Augmentation**: Ensures the model treats forward/reverse strands symmetrically.
@@ -63,8 +68,16 @@ python phase3_model/inference.py
 python phase6_steering/analysis.py
 ```
 
+### Roadmap Aggregation
+```bash
+conda run -n biohack python phase0_aggregate/scripts/run_phase0_aggregate.py --config phase0_aggregate/config/roadmap_18state_full.json
+```
+
 ## Competition Specs
 - **Input**: 200bp DNA (A, C, G, T).
 - **Output**: Integer label 1–18.
 - **Metric**: Accuracy.
 - **Constraints**: No external data, no specialized DNA software (standard ML libs only).
+
+## Revision History
+- 2026-04-08: Added `phase0_aggregate` to download and preprocess the full Roadmap 18-state dataset into hg38 training corpora, including reproducible config, QC, and merged split generation.
