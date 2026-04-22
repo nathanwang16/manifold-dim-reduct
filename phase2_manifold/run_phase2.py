@@ -1,250 +1,261 @@
-"""
-Phase 2 Pipeline Runner
+"""Phase 2 driver: manifold learning on a balanced train subsample.
 
-Orchestrates the complete Phase 2 manifold learning pipeline:
-1. Feature extraction (k-mer, positional, dinucleotide)
-2. Dimensionality reduction (PCA, UMAP, PHATE)
-3. Cluster analysis (silhouette, ARI, hierarchical)
-4. Visualization generation
+Pipeline:
+  1. Materialize a stratified train subsample (reuses phase1 index .npy)
+  2. Extract 6-mer / positional / dinucleotide features
+  3. Run PCA / UMAP / PHATE dimensionality reduction
+  4. Cluster analysis + silhouette / ARI metrics
+  5. Static visualizations (per-label, per-family, per-subcluster colorings)
 
-Usage:
-    # Use full visualization data (default - 171,699 sequences):
-    python run_phase2.py
+Artifacts land under `results/phase2/...` per `config.json`.
 
-    # Use demo data for fast testing:
-    python run_phase2.py --use-demo-data
-
-    # Specify custom data files:
-    python run_phase2.py --sequences trainsequences.csv --labels trainlabels.csv
-
-    # With subsampling for faster testing:
-    python run_phase2.py --subsample 50000
-
-    # Skip steps (use existing features/embeddings):
-    python run_phase2.py --skip-extraction --skip-reduction
-
-    # Launch interactive dashboard:
-    python run_phase2.py --dashboard
+Typical usage:
+    python phase2_manifold/run_phase2.py                       # full run
+    python phase2_manifold/run_phase2.py --subsample 10000     # quick dev
+    python phase2_manifold/run_phase2.py --skip_reduction      # replot only
 """
 
-import sys
+from __future__ import annotations
+
 import argparse
 import json
 import subprocess
+import sys
 from pathlib import Path
 
-# Add parent directory to path for logger import
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from logger import get_logger, LogTimer, log_metrics, configure_logging, setup_exception_logging
+import numpy as np
+import pandas as pd
 
-# Initialize logger
+REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO_ROOT))
+
+from chromatin_lib import (  # noqa: E402
+    FAMILY_NAMES,
+    LABEL_TO_FAMILY,
+    LABEL_TO_SUBCLUSTER,
+    merged_split_paths,
+)
+from logger import get_logger, configure_logging, LogTimer  # noqa: E402
+
 logger = get_logger(__name__)
 
 
-def load_config(config_path: str = "config.json") -> dict:
-    """Load configuration from JSON file."""
-    with open(config_path, 'r') as f:
-        return json.load(f)
+def materialize_subsample(
+    indices_path: Path,
+    sequences_path: Path,
+    labels_path: Path,
+    out_dir: Path,
+    subsample: int | None = None,
+) -> dict[str, Path]:
+    """Given a row-index .npy, emit aligned sequences + labels + family + subcluster CSVs."""
+    indices = np.load(indices_path)
+    if subsample is not None and indices.size > subsample:
+        rng = np.random.default_rng(0)
+        indices = rng.choice(indices, size=subsample, replace=False)
+    indices = np.sort(indices)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    logger.info(f"Materializing {indices.size:,} sequences from {sequences_path.name}")
+    keep = set(indices.tolist())
+    seq_out = out_dir / "viz_sequences.csv"
+    lab_out = out_dir / "viz_labels.csv"
+    fam_out = out_dir / "viz_family_labels.csv"
+    sub_out = out_dir / "viz_subcluster_labels.csv"
+
+    lab_values: list[int] = []
+    with open(sequences_path) as fs, open(labels_path) as fl, open(seq_out, "w") as so, open(lab_out, "w") as lo:
+        for i, (seq, lab) in enumerate(zip(fs, fl)):
+            if i in keep:
+                so.write(seq)
+                lo.write(lab)
+                lab_values.append(int(lab.strip()) - 1)
+
+    lab_arr = np.asarray(lab_values, dtype=np.int64)
+    fam_arr = LABEL_TO_FAMILY[lab_arr]
+    sub_arr = LABEL_TO_SUBCLUSTER[lab_arr]
+    pd.DataFrame(fam_arr).to_csv(fam_out, header=False, index=False)
+    pd.DataFrame(sub_arr).to_csv(sub_out, header=False, index=False)
+
+    logger.info(f"Wrote {seq_out}, {lab_out}, {fam_out}, {sub_out}")
+    return {
+        "sequences": seq_out,
+        "labels": lab_out,
+        "family": fam_out,
+        "subcluster": sub_out,
+    }
 
 
-def run_step(script: str, args: list, step_name: str) -> bool:
-    """Run a pipeline step and handle errors."""
-    logger.info(f"\n{'='*60}")
-    logger.info(f"STEP: {step_name}")
-    logger.info(f"{'='*60}")
-
-    cmd = [sys.executable, script] + args
-    logger.debug(f"Command: {' '.join(cmd)}")
-
-    try:
-        with LogTimer(logger, step_name):
-            result = subprocess.run(cmd, check=True, capture_output=False)
-        logger.info(f"Completed: {step_name}")
-        return True
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Failed: {step_name}")
-        logger.error(f"Return code: {e.returncode}")
-        return False
-    except Exception as e:
-        logger.error(f"Unexpected error in {step_name}: {e}")
-        return False
+def run_step(script: Path, args: list[str], name: str) -> None:
+    cmd = [sys.executable, str(script)] + args
+    logger.info(f"Running {name}: {' '.join(cmd)}")
+    with LogTimer(logger, name):
+        subprocess.run(cmd, check=True)
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Run Phase 2 manifold learning pipeline")
-    parser.add_argument("--sequences", type=str, default=None, help="Path to sequences CSV (overrides config)")
-    parser.add_argument("--labels", type=str, default=None, help="Path to labels CSV (overrides config)")
-    parser.add_argument("--config", type=str, default="config.json", help="Config file path")
-    parser.add_argument("--use-demo-data", action="store_true",
-                        help="Use demo data from config (small dataset for testing)")
+def plot_per_coloring(
+    embeddings_dir: Path,
+    labels_path: Path,
+    coloring_name: str,
+    output_dir: Path,
+) -> None:
+    """Re-plot the already-computed 2D embeddings colored by a different label array."""
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    labels = np.loadtxt(labels_path, dtype=np.int64)
+    n_classes = int(labels.max()) + 1
+    cmap = plt.get_cmap("tab20", max(n_classes, 20))
+
+    for emb_path in sorted(embeddings_dir.glob("*.npy")):
+        if "labels" in emb_path.name or "variance" in emb_path.name or "indices" in emb_path.name:
+            continue
+        emb = np.load(emb_path)
+        if emb.ndim != 2 or emb.shape[1] < 2:
+            continue
+        fig, ax = plt.subplots(figsize=(7, 6), dpi=130)
+        scatter = ax.scatter(emb[:, 0], emb[:, 1], c=labels[: emb.shape[0]], cmap=cmap, s=2, alpha=0.6)
+        ax.set_title(f"{emb_path.stem} • colored by {coloring_name}")
+        ax.set_xlabel("dim 1")
+        ax.set_ylabel("dim 2")
+        cbar = plt.colorbar(scatter, ax=ax, ticks=range(n_classes))
+        cbar.set_label(coloring_name)
+        out = output_dir / f"{emb_path.stem}_{coloring_name}.png"
+        fig.tight_layout()
+        fig.savefig(out)
+        plt.close(fig)
+        logger.info(f"Saved {out}")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", default="config.json")
+    parser.add_argument("--skip_materialize", action="store_true")
+    parser.add_argument("--skip_extraction", action="store_true")
+    parser.add_argument("--skip_reduction", action="store_true")
+    parser.add_argument("--skip_analysis", action="store_true")
+    parser.add_argument("--skip_visualization", action="store_true")
     parser.add_argument("--subsample", type=int, default=None,
-                        help="Subsample N points for faster processing")
-    parser.add_argument("--skip-extraction", action="store_true",
-                        help="Skip feature extraction (use existing features)")
-    parser.add_argument("--skip-reduction", action="store_true",
-                        help="Skip dimensionality reduction (use existing embeddings)")
-    parser.add_argument("--dashboard", action="store_true",
-                        help="Launch interactive dashboard after processing")
-    parser.add_argument("--log-dir", type=str, default="logs", help="Log directory")
+                        help="Cap the viz sample to this many total rows (debug).")
+    parser.add_argument("--log-dir", default="results/phase2/logs")
     args = parser.parse_args()
 
-    # Configure logging
     configure_logging(log_dir=args.log_dir)
-    setup_exception_logging(logger)
 
-    logger.info("="*60)
-    logger.info("PHASE 2 MANIFOLD LEARNING PIPELINE")
-    logger.info("="*60)
+    with open(args.config) as f:
+        cfg = json.load(f)
 
-    # Load config and determine data source
-    config = load_config(args.config)
-    base_dir = Path(__file__).parent
+    phase1_out = Path(cfg["phase1"]["output_dir"])
+    per_class = int(cfg["phase1"]["viz_subsample_per_class"])
+    seed = int(cfg["phase1"]["seed"])
+    idx_file = phase1_out / f"train_viz_{per_class}perclass_seed{seed}.npy"
+    if not idx_file.exists():
+        raise FileNotFoundError(
+            f"Missing phase1 subsample index {idx_file}. Run `python phase1_filter/run_phase1.py`."
+        )
 
-    # Determine which data to use (viz data is default)
-    if args.sequences and args.labels:
-        # User explicitly provided sequences/labels
-        sequences_file = args.sequences
-        labels_file = args.labels
-        use_viz_data = False
-        logger.info(f"Using command-line provided data: {sequences_file}")
-    elif args.use_demo_data:
-        # Use demo data
-        sequences_file = config['data']['train_sequences']
-        labels_file = config['data']['train_labels']
-        use_viz_data = False
-        logger.info(f"Using demo data from config: {sequences_file}")
+    paths = merged_split_paths("train")
+    phase2_cfg = cfg["phase2"]
+    features_dir = Path(phase2_cfg["features_dir"])
+    embeddings_dir = Path(phase2_cfg["embeddings_dir"])
+    analysis_dir = Path(phase2_cfg["analysis_dir"])
+    figures_dir = Path(phase2_cfg["figures_dir"])
+    for d in (features_dir, embeddings_dir, analysis_dir, figures_dir):
+        d.mkdir(parents=True, exist_ok=True)
+
+    viz_dir = features_dir.parent / "viz_materialized"
+    if not args.skip_materialize:
+        viz_paths = materialize_subsample(
+            idx_file, paths["sequences"], paths["labels"], viz_dir, args.subsample
+        )
     else:
-        # Default: use viz data (full dataset)
-        sequences_file = config['data']['viz_sequences']
-        labels_file = config['data']['viz_labels']
-        use_viz_data = True
-        logger.info(f"Using full visualization data from config: {sequences_file}")
+        viz_paths = {
+            "sequences": viz_dir / "viz_sequences.csv",
+            "labels": viz_dir / "viz_labels.csv",
+            "family": viz_dir / "viz_family_labels.csv",
+            "subcluster": viz_dir / "viz_subcluster_labels.csv",
+        }
 
-    log_metrics(logger, {
-        "sequences_file": sequences_file,
-        "labels_file": labels_file,
-        "use_viz_data": use_viz_data,
-        "subsample": args.subsample or "none",
-        "skip_extraction": args.skip_extraction,
-        "skip_reduction": args.skip_reduction
-    }, message="Pipeline configuration")
+    scripts_dir = Path(__file__).parent
 
-    steps_completed = 0
-    steps_failed = 0
-
-    with LogTimer(logger, "Full Phase 2 Pipeline"):
-        # Step 1: Feature Extraction
-        if not args.skip_extraction:
-            extraction_args = [
-                "--input", sequences_file,
-                "--labels", labels_file,
+    # Step 1: Feature extraction
+    if not args.skip_extraction:
+        run_step(
+            scripts_dir / "feature_extraction.py",
+            [
+                "--input", str(viz_paths["sequences"]),
+                "--labels", str(viz_paths["labels"]),
                 "--config", args.config,
-                "--output", config['output']['features_dir'],
+                "--output", str(features_dir),
                 "--log-dir", args.log_dir,
-                "--n-jobs", str(config.get('n_jobs', -1)),
-                "--batch-size", str(config.get('feature_extraction_batch_size', 1000))
-            ]
-            if run_step(str(base_dir / "feature_extraction.py"), extraction_args,
-                       "Feature Extraction"):
-                steps_completed += 1
-            else:
-                steps_failed += 1
-                logger.error("Pipeline failed at feature extraction")
-                return 1
-        else:
-            logger.info("Skipping feature extraction (--skip-extraction)")
+                "--n-jobs", str(phase2_cfg.get("n_jobs", -1)),
+                "--batch-size", str(phase2_cfg.get("feature_extraction_batch_size", 2000)),
+            ],
+            "Feature extraction",
+        )
 
-        # Step 2: Dimensionality Reduction
-        if not args.skip_reduction:
-            features_path = Path(config['output']['features_dir']) / f"kmer_{config['phase2']['kmer_k']}_features.npy"
-            labels_path = Path(config['output']['features_dir']) / "labels.npy"
-
-            reduction_args = [
-                "--features", str(features_path),
-                "--labels", str(labels_path),
+    # Step 2: Dimensionality reduction
+    feat_path = features_dir / f"kmer_{phase2_cfg['kmer_k']}_features.npy"
+    label_path = features_dir / "labels.npy"
+    if not args.skip_reduction:
+        run_step(
+            scripts_dir / "dimensionality_reduction.py",
+            [
+                "--features", str(feat_path),
+                "--labels", str(label_path),
                 "--config", args.config,
-                "--output", config['output']['embeddings_dir'],
-                "--log-dir", args.log_dir
-            ]
-            if args.subsample:
-                reduction_args.extend(["--subsample", str(args.subsample)])
+                "--output", str(embeddings_dir),
+                "--log-dir", args.log_dir,
+            ],
+            "Dimensionality reduction",
+        )
 
-            if run_step(str(base_dir / "dimensionality_reduction.py"), reduction_args,
-                       "Dimensionality Reduction"):
-                steps_completed += 1
-            else:
-                steps_failed += 1
-                logger.error("Pipeline failed at dimensionality reduction")
-                return 1
-        else:
-            logger.info("Skipping dimensionality reduction (--skip-reduction)")
+    # Step 3: Cluster analysis
+    if not args.skip_analysis:
+        run_step(
+            scripts_dir / "cluster_analysis.py",
+            [
+                "--embeddings", str(embeddings_dir),
+                "--labels", str(embeddings_dir / "labels.npy"),
+                "--config", args.config,
+                "--output", str(analysis_dir),
+                "--log-dir", args.log_dir,
+            ],
+            "Cluster analysis",
+        )
 
-        # Step 3: Cluster Analysis
-        labels_path = Path(config['output']['embeddings_dir']) / "labels.npy"
-        analysis_args = [
-            "--embeddings", config['output']['embeddings_dir'],
-            "--labels", str(labels_path),
-            "--config", args.config,
-            "--output", config['output']['analysis_dir'],
-            "--log-dir", args.log_dir
-        ]
-        if run_step(str(base_dir / "cluster_analysis.py"), analysis_args,
-                   "Cluster Analysis"):
-            steps_completed += 1
-        else:
-            steps_failed += 1
-            logger.error("Pipeline failed at cluster analysis")
-            return 1
+    # Step 4: Static visualizations (label-colored)
+    if not args.skip_visualization:
+        run_step(
+            scripts_dir / "static_visualizations.py",
+            [
+                "--embeddings", str(embeddings_dir),
+                "--analysis", str(analysis_dir),
+                "--labels", str(embeddings_dir / "labels.npy"),
+                "--output", str(figures_dir),
+                "--log-dir", args.log_dir,
+            ],
+            "Static visualizations (label)",
+        )
 
-        # Step 4: Static Visualizations
-        viz_args = [
-            "--embeddings", config['output']['embeddings_dir'],
-            "--analysis", config['output']['analysis_dir'],
-            "--labels", str(labels_path),
-            "--output", config['output']['figures_dir'],
-            "--log-dir", args.log_dir
-        ]
-        if run_step(str(base_dir / "static_visualizations.py"), viz_args,
-                   "Static Visualizations"):
-            steps_completed += 1
-        else:
-            steps_failed += 1
-            logger.error("Pipeline failed at visualization generation")
-            return 1
+        # Extra: family- and subcluster-colored scatter plots.
+        plot_per_coloring(
+            embeddings_dir,
+            viz_paths["family"],
+            "family",
+            figures_dir / "family",
+        )
+        plot_per_coloring(
+            embeddings_dir,
+            viz_paths["subcluster"],
+            "subcluster",
+            figures_dir / "subcluster",
+        )
 
-    # Summary
-    logger.info(f"\n{'='*60}")
-    logger.info("PHASE 2 PIPELINE COMPLETE")
-    logger.info(f"{'='*60}")
-
-    log_metrics(logger, {
-        "steps_completed": steps_completed,
-        "steps_failed": steps_failed,
-        "features_dir": config['output']['features_dir'],
-        "embeddings_dir": config['output']['embeddings_dir'],
-        "analysis_dir": config['output']['analysis_dir'],
-        "figures_dir": config['output']['figures_dir']
-    }, message="Pipeline summary")
-
-    logger.info(f"Features: {config['output']['features_dir']}")
-    logger.info(f"Embeddings: {config['output']['embeddings_dir']}")
-    logger.info(f"Analysis: {config['output']['analysis_dir']}")
-    logger.info(f"Figures: {config['output']['figures_dir']}")
-
-    # Optional: Launch dashboard
-    if args.dashboard:
-        logger.info("\nLaunching interactive dashboard...")
-        dashboard_args = [
-            "--embeddings", config['output']['embeddings_dir'],
-            "--analysis", config['output']['analysis_dir'],
-            "--labels", str(labels_path),
-            "--log-dir", args.log_dir
-        ]
-        run_step(str(base_dir / "visualization_dashboard.py"), dashboard_args,
-                "Interactive Dashboard")
-
-    return 0
+    logger.info("Phase 2 complete.")
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main() or 0)

@@ -26,6 +26,10 @@ phase0_aggregate/tools/
 
 # Model artifacts
 phase3_model/checkpoints/
+results/**/checkpoints/
+
+# Phase1 generated label tables (large)
+phase1_filter/outputs/*.csv
 
 # Runtime caches
 **/cache/

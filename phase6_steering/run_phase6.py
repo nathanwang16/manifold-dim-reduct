@@ -1,332 +1,333 @@
-"""
-Main orchestration script for Phase 6: Steering & Alignment.
+"""Phase 6 orchestrator: steering-vector sweeps on the balanced val set.
 
-Runs the complete Phase 6 pipeline:
-1. Load trained model and data
-2. Extract and cache activations
-3. Compute steering vectors
-4. Run alignment evaluation
-5. Apply contrastive steering for confused pairs
-6. Generate reports
+Steps (all single-GPU):
+
+1. Extract bottleneck activations for the balanced val subset (`phase4_sae`
+   already does this — we reuse its output if present; otherwise we call
+   `extract_activations.py`).
+2. Compute per-class steering vectors (`compute_steering_vectors`).
+3. For each class c and a grid of alphas, apply steering and measure:
+   - overall val accuracy
+   - per-class accuracy change
+   - selective boost for class c
+4. For the top-K confusable class pairs (from the confusion matrix), try
+   adding `alpha * (dir_B - dir_A)` to push predictions A -> B; report
+   improvement on actually-confused examples.
+
+Outputs (`results/phase6_steering/`):
+    steering_vectors.npz                 directions + unit directions
+    steering_sweep.csv                   long-form per-(class, alpha, metric)
+    contrastive_pairs.csv                per-pair improvement at best alpha
+    summary.json                         headline metrics
 """
+
+from __future__ import annotations
 
 import argparse
+import csv
 import json
+import subprocess
 import sys
 from pathlib import Path
+from typing import Dict, List
 
-# Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-import torch
 import numpy as np
+import torch
+from torch.utils.data import DataLoader
 
-from phase3_model.model import ChromatinCNN
-from phase3_model.dataset import ChromatinDataModule
-from phase3_model.inference import load_model
+REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO_ROOT))
 
-from phase6_steering.activation_cache import ActivationCache
-from phase6_steering.steering_vectors import SteeringVectorComputer
-from phase6_steering.inference_steering import SteeringInferenceEngine
-from phase6_steering.contrastive_steering import ContrastiveSteeringEngine
-from phase6_steering.alignment_evaluation import AlignmentEvaluator
-from phase6_steering.utils import get_device, MetricsTracker
-
-from logger import get_logger, LogTimer, configure_logging, log_metrics
-
-logger = get_logger(__name__)
-
-
-def load_config(config_path: str) -> dict:
-    """Load configuration from JSON file."""
-    with open(config_path, 'r') as f:
-        return json.load(f)
+from chromatin_lib import (  # noqa: E402
+    STATE_NAMES,
+    StreamingChromatinDataset,
+    collate_chromatin,
+    merged_split_paths,
+)
+from phase3_model.model import build_model  # noqa: E402
+from phase6_steering.steering import (  # noqa: E402
+    SteeringVectors,
+    compute_steering_vectors,
+    steered_forward,
+)
 
 
-def run_activation_extraction(
-    model: ChromatinCNN,
-    data_module: ChromatinDataModule,
-    config: dict,
-    force_recompute: bool = False
-) -> tuple:
-    """Extract and cache activations."""
-    cache_dir = config.get('phase6', {}).get('cache_dir', 'phase6_steering/cache')
-    cache = ActivationCache(model, cache_dir=cache_dir)
-
-    cache_name = 'activations_train'
-
-    if cache.cache_exists(cache_name) and not force_recompute:
-        logger.info("Loading cached activations...")
-        return cache.load_cache(cache_name)
-    else:
-        logger.info("Extracting activations from training data...")
-        train_loader = data_module.get_train_dataloader()
-        activations, labels, predictions, logits = cache.extract_activations(
-            train_loader,
-            layer_name='bottleneck',
-            apply_pooling=True
-        )
-        cache.save_cache(cache_name)
-        return activations, labels, predictions, logits
+def _ensure_activations(
+    checkpoint: Path, config_path: Path, act_dir: Path, device: str
+) -> None:
+    bottleneck_path = act_dir / "bottleneck.npy"
+    if bottleneck_path.exists():
+        return
+    print("Extracting activations (reusing phase4 pipeline)...")
+    subprocess.run([
+        sys.executable, "phase4_sae/extract_activations.py",
+        "--checkpoint", str(checkpoint),
+        "--config", str(config_path),
+        "--output_dir", str(act_dir),
+        "--device", device,
+    ], check=True, cwd=REPO_ROOT)
 
 
-def run_steering_computation(
-    activations: np.ndarray,
-    labels: np.ndarray,
-    config: dict,
-    force_recompute: bool = False
-) -> SteeringVectorComputer:
-    """Compute steering vectors."""
-    cache_dir = Path(config.get('phase6', {}).get('cache_dir', 'phase6_steering/cache'))
-    steering_path = cache_dir / 'steering_vectors.npz'
-
-    if steering_path.exists() and not force_recompute:
-        logger.info("Loading cached steering vectors...")
-        return SteeringVectorComputer.load(steering_path)
-    else:
-        logger.info("Computing steering vectors...")
-        steering = SteeringVectorComputer(n_classes=18, n_features=activations.shape[1])
-        steering.compute_label_centroids(activations, labels)
-        steering.compute_steering_vectors()
-        steering.save(steering_path)
-
-        # Log statistics
-        stats = steering.get_statistics()
-        log_metrics(logger, stats, "Steering vector statistics")
-
-        return steering
-
-
-def run_alignment_evaluation(
-    model: ChromatinCNN,
-    data_module: ChromatinDataModule,
-    config: dict
-) -> dict:
-    """Run alignment evaluation suite."""
-    results_dir = Path(config.get('phase6', {}).get('results_dir', 'phase6_steering/results'))
-
-    evaluator = AlignmentEvaluator(model)
-    val_loader = data_module.get_val_dataloader()
-
-    # Example monotonicity test cases (common regulatory motifs)
-    monotonicity_cases = [
-        {'motif': 'TATAAA', 'position': 25, 'expected_label': 0},  # TATA box
-        {'motif': 'CCAAT', 'position': 80, 'expected_label': 1},   # CAAT box
-        {'motif': 'GGGCGG', 'position': 100, 'expected_label': 2}, # GC box
-        {'motif': 'CACGTG', 'position': 100, 'expected_label': 3}, # E-box
-    ]
-
-    report = evaluator.generate_alignment_report(
-        val_loader,
-        results_dir,
-        run_monotonicity=True,
-        monotonicity_test_cases=monotonicity_cases
+def load_val_batch_in_ram(cfg: Dict, per_class: int, device: str):
+    phase1_dir = Path(cfg["phase1"]["output_dir"])
+    seed = int(cfg["phase1"].get("seed", 20260408))
+    candidates = sorted(phase1_dir.glob(f"val_balanced_*perclass_seed{seed}.npy"))
+    if not candidates:
+        raise FileNotFoundError("Run phase1 `build_subsamples.py` first.")
+    candidate = max(candidates, key=lambda p: int(p.stem.split("_")[2].replace("perclass", "")))
+    idx = np.load(candidate)
+    val_paths = merged_split_paths("val")
+    ds = StreamingChromatinDataset(
+        sequences_path=val_paths["sequences"],
+        labels_path=val_paths["labels"],
+        sample_indices=idx,
+        sequence_length=int(cfg["dataset"].get("sequence_length", 200)),
+        compute_features=bool(cfg["phase3"].get("use_engineered_features", True)),
     )
+    loader = DataLoader(ds, batch_size=1024, num_workers=4, shuffle=False,
+                        collate_fn=collate_chromatin)
 
-    return report
+    per_class_counts = np.zeros(18, dtype=np.int64)
+    xs, feats, ys = [], [], []
+    for batch in loader:
+        y = batch["y"].numpy()
+        keep = np.zeros(len(y), dtype=bool)
+        for c in range(18):
+            if per_class_counts[c] >= per_class:
+                continue
+            slots = per_class - per_class_counts[c]
+            rows = np.flatnonzero(y == c)[:slots]
+            keep[rows] = True
+            per_class_counts[c] += rows.size
+        if keep.any():
+            xs.append(batch["x"][keep])
+            if "feat" in batch:
+                feats.append(batch["feat"][keep])
+            ys.append(batch["y"][keep])
+        if (per_class_counts >= per_class).all():
+            break
 
-
-def run_contrastive_steering(
-    model: ChromatinCNN,
-    steering: SteeringVectorComputer,
-    data_module: ChromatinDataModule,
-    config: dict
-) -> dict:
-    """Run contrastive steering analysis."""
-    phase6_config = config.get('phase6', {})
-    contrastive_config = phase6_config.get('contrastive', {})
-
-    # Create engines
-    steering_engine = SteeringInferenceEngine(model, steering)
-    contrastive_engine = ContrastiveSteeringEngine(steering_engine)
-
-    # Get validation predictions
-    val_loader = data_module.get_val_dataloader()
-
-    # Extract predictions for confusion analysis
-    cache = ActivationCache(model)
-    _, labels, predictions, _ = cache.extract_activations(val_loader, apply_pooling=True)
-
-    # Compute confusion matrix and identify confused pairs
-    contrastive_engine.compute_confusion_matrix(predictions, labels)
-    confused_pairs = contrastive_engine.identify_confused_pairs(
-        threshold=contrastive_config.get('confusion_threshold', 0.05),
-        top_k=contrastive_config.get('top_k_pairs', 10)
-    )
-
-    # Evaluate contrastive steering improvement
-    val_loader = data_module.get_val_dataloader()  # Fresh loader
-    improvement = contrastive_engine.evaluate_contrastive_improvement(
-        val_loader,
-        confidence_threshold=phase6_config.get('steering', {}).get('confidence_threshold', 0.6),
-        alpha=phase6_config.get('steering', {}).get('default_alpha', 0.5)
-    )
-
-    # Save confusion analysis
-    results_dir = Path(phase6_config.get('results_dir', 'phase6_steering/results'))
-    confusion_report = {
-        'confused_pairs': contrastive_engine.get_confused_pairs_summary(),
-        'improvement': improvement,
-    }
-
-    with open(results_dir / 'confusion_analysis.json', 'w') as f:
-        json.dump(confusion_report, f, indent=2)
-
-    return confusion_report
+    x = torch.cat(xs, dim=0).to(device)
+    feat = torch.cat(feats, dim=0).to(device) if feats else None
+    y = torch.cat(ys, dim=0).to(device)
+    return x, feat, y
 
 
-def main():
-    """Main orchestration."""
-    parser = argparse.ArgumentParser(description='Phase 6: Steering & Alignment')
-    parser.add_argument('--config', type=str, default='config.json',
-                        help='Path to config file')
-    parser.add_argument('--checkpoint', type=str, default=None,
-                        help='Path to model checkpoint (overrides config)')
-    parser.add_argument('--mode', choices=['full', 'steering', 'alignment', 'contrastive'],
-                        default='full', help='Which components to run')
-    parser.add_argument('--force-recompute', action='store_true',
-                        help='Force recomputation of cached values')
-    parser.add_argument('--log-dir', type=str, default='logs',
-                        help='Directory for log files')
-    parser.add_argument('--use-demo-data', action='store_true',
-                        help='Use demo data instead of full dataset')
+def sweep_alpha(
+    model: torch.nn.Module,
+    x: torch.Tensor,
+    feat: torch.Tensor,
+    y: torch.Tensor,
+    directions: torch.Tensor,
+    alphas: List[float],
+    batch_size: int = 1024,
+) -> List[Dict]:
+    results: List[Dict] = []
+    n_classes = directions.shape[0]
+    device = x.device
+    with torch.no_grad():
+        base_preds = torch.zeros_like(y)
+        for i in range(0, x.shape[0], batch_size):
+            xb = x[i : i + batch_size]
+            fb = feat[i : i + batch_size] if feat is not None else None
+            base_preds[i : i + batch_size] = model(xb, engineered=fb)["logits"].argmax(dim=-1)
+        base_acc = (base_preds == y).float().mean().item()
+
+        for c in range(n_classes):
+            dir_c = directions[c]
+            for alpha in alphas:
+                preds = torch.zeros_like(y)
+                for i in range(0, x.shape[0], batch_size):
+                    xb = x[i : i + batch_size]
+                    fb = feat[i : i + batch_size] if feat is not None else None
+                    out = steered_forward(model, xb, fb, dir_c, alpha)
+                    preds[i : i + batch_size] = out["logits"].argmax(dim=-1)
+                acc = (preds == y).float().mean().item()
+                mask_c = y == c
+                acc_c = (preds[mask_c] == c).float().mean().item() if mask_c.any() else 0.0
+                fraction_pred_c = (preds == c).float().mean().item()
+                results.append({
+                    "target_class": c,
+                    "target_name": STATE_NAMES[c],
+                    "alpha": alpha,
+                    "overall_acc": acc,
+                    "target_class_acc": acc_c,
+                    "fraction_pred_target": fraction_pred_c,
+                    "baseline_overall_acc": base_acc,
+                })
+    return results
+
+
+def confused_pair_improvement(
+    model: torch.nn.Module,
+    x: torch.Tensor,
+    feat: torch.Tensor,
+    y: torch.Tensor,
+    directions: torch.Tensor,
+    alphas: List[float],
+    top_k_pairs: int,
+    batch_size: int = 1024,
+) -> List[Dict]:
+    """For top-K confused (A→B) pairs, try adding alpha*(dir_A - dir_B) to
+    push mispredictions back to A.
+    """
+    device = x.device
+    with torch.no_grad():
+        base_preds = torch.zeros_like(y)
+        for i in range(0, x.shape[0], batch_size):
+            xb = x[i : i + batch_size]
+            fb = feat[i : i + batch_size] if feat is not None else None
+            base_preds[i : i + batch_size] = model(xb, engineered=fb)["logits"].argmax(dim=-1)
+    base_preds_np = base_preds.cpu().numpy()
+    y_np = y.cpu().numpy()
+
+    # Relative confusion: P(pred=B | true=A)
+    conf = np.zeros((18, 18), dtype=np.int64)
+    for a, b in zip(y_np, base_preds_np):
+        conf[a, b] += 1
+    row = conf.sum(axis=1, keepdims=True).clip(min=1)
+    rel = conf / row
+
+    pairs = []
+    for a in range(18):
+        for b in range(18):
+            if a != b:
+                pairs.append((a, b, float(rel[a, b])))
+    pairs.sort(key=lambda t: -t[2])
+    pairs = pairs[:top_k_pairs]
+
+    results: List[Dict] = []
+    for a, b, conf_p in pairs:
+        # Target: misclassified-as-B true-A examples. Push toward A.
+        misclass_mask = (y == a) & (base_preds == b)
+        n_mis = int(misclass_mask.sum().item())
+        if n_mis == 0:
+            continue
+        x_mis = x[misclass_mask]
+        feat_mis = feat[misclass_mask] if feat is not None else None
+        y_mis = y[misclass_mask]
+        dir_ab = directions[a] - directions[b]
+        best = None
+        with torch.no_grad():
+            for alpha in alphas:
+                preds = torch.zeros_like(y_mis)
+                for i in range(0, x_mis.shape[0], batch_size):
+                    xb = x_mis[i : i + batch_size]
+                    fb = feat_mis[i : i + batch_size] if feat_mis is not None else None
+                    out = steered_forward(model, xb, fb, dir_ab, alpha)
+                    preds[i : i + batch_size] = out["logits"].argmax(dim=-1)
+                rec = (preds == a).float().mean().item()
+                collateral_pred_b = (preds == b).float().mean().item()
+                row = {
+                    "class_a": int(a),
+                    "class_b": int(b),
+                    "class_a_name": STATE_NAMES[a],
+                    "class_b_name": STATE_NAMES[b],
+                    "n_misclassified": n_mis,
+                    "alpha": alpha,
+                    "recovery_rate": rec,
+                    "still_predicting_b": collateral_pred_b,
+                    "baseline_confusion": conf_p,
+                }
+                results.append(row)
+                if best is None or rec > best["recovery_rate"]:
+                    best = row
+    return results
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--checkpoint", type=Path, required=True)
+    parser.add_argument("--config", type=Path, default="config.json")
+    parser.add_argument("--device", default="cuda:0")
+    parser.add_argument("--activations_dir", type=Path, default=None,
+                        help="Re-use the phase4 activations cache if present.")
+    parser.add_argument("--force", action="store_true")
     args = parser.parse_args()
 
-    # Configure logging
-    configure_logging(log_dir=args.log_dir)
-    logger.info("=" * 60)
-    logger.info("Phase 6: Steering & Alignment Techniques")
-    logger.info("=" * 60)
+    with open(args.config) as f:
+        cfg = json.load(f)
+    p6 = cfg.get("phase6", {})
+    base_out = Path(p6.get("output_dir", "results/phase6_steering"))
+    base_out.mkdir(parents=True, exist_ok=True)
+    act_dir = args.activations_dir or Path(cfg.get("phase4_sae", {}).get(
+        "output_dir", "results/phase4_sae")) / "activations"
 
-    # Load config
-    config = load_config(args.config)
-    
-    # Override demo data setting if specified
-    if args.use_demo_data:
-        config['use_demo_data'] = True
-        logger.info("Using demo data")
-    
-    phase3_config = config.get('phase3', {})
-    phase6_config = config.get('phase6', {})
+    _ensure_activations(args.checkpoint, args.config, act_dir, args.device)
 
-    # Determine checkpoint path
-    checkpoint_path = args.checkpoint
-    if checkpoint_path is None:
-        checkpoint_path = phase3_config.get('checkpoint_dir', 'phase3_model/checkpoints')
-        checkpoint_path = str(Path(checkpoint_path) / 'best_model.pt')
+    bottleneck = np.load(act_dir / "bottleneck.npy")
+    labels = np.load(act_dir / "labels.npy")
+    vec = compute_steering_vectors(bottleneck, labels, n_classes=18)
 
-    # Get device
-    device = get_device()
-    logger.info(f"Using device: {device}")
+    np.savez(base_out / "steering_vectors.npz",
+             centroids=vec.centroids,
+             global_centroid=vec.global_centroid,
+             directions=vec.directions,
+             unit_directions=vec.unit_directions,
+             counts=vec.counts)
 
-    # Load model
-    with LogTimer(logger, "Loading model"):
-        model = load_model(checkpoint_path, config, device)
-        model.eval()
+    # Load val batch into RAM for sweeps
+    per_class_val = int(p6.get("balanced_val_per_class", 5000))
+    print(f"Loading {per_class_val}/class val samples ...")
+    x, feat, y = load_val_batch_in_ram(cfg, per_class_val, args.device)
+    print(f"Loaded {x.shape[0]:,} val samples.")
 
-    # Load data
-    with LogTimer(logger, "Loading data"):
-        data_config = config.get('data', {})
-        
-        # Use demo data if specified
-        if config.get('use_demo_data', False):
-            train_seq = 'data/demo_train_sequences.csv'
-            train_lbl = 'data/demo_train_labels.csv'
-            val_seq = 'data/demo_val_sequences.csv'
-            val_lbl = 'data/demo_val_labels.csv'
-            test_seq = 'data/demo_test_sequences.csv'
-            batch_size = 32  # Smaller batch for demo
-            num_workers = 0  # Disable multiprocessing for demo
-        else:
-            train_seq = data_config.get('train_sequences')
-            train_lbl = data_config.get('train_labels')
-            val_seq = data_config.get('val_sequences')
-            val_lbl = data_config.get('val_labels')
-            test_seq = data_config.get('test_sequences')
-            batch_size = 256
-            num_workers = phase3_config.get('training', {}).get('num_workers', 4)
-        
-        data_module = ChromatinDataModule(
-            train_sequences=train_seq,
-            train_labels=train_lbl,
-            val_sequences=val_seq,
-            val_labels=val_lbl,
-            test_sequences=test_seq,
-            batch_size=batch_size,
-            num_workers=num_workers,
-            rc_augment=False,  # No augmentation for analysis
-            jitter_prob=0.0,
-            noise_prob=0.0,
-        )
+    model = build_model(cfg).to(args.device)
+    state = torch.load(args.checkpoint, map_location=args.device, weights_only=False)
+    model.load_state_dict(state["model"])
+    model.eval()
 
-    # Create output directories
-    cache_dir = Path(phase6_config.get('cache_dir', 'phase6_steering/cache'))
-    results_dir = Path(phase6_config.get('results_dir', 'phase6_steering/results'))
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    results_dir.mkdir(parents=True, exist_ok=True)
+    alphas = list(p6.get("alpha_grid", [0.0, 0.25, 0.5, 0.75, 1.0, 1.5]))
+    directions_t = torch.from_numpy(vec.directions).float().to(args.device)
 
-    # Metrics tracker
-    tracker = MetricsTracker(logger)
+    sweep = sweep_alpha(model, x, feat, y, directions_t, alphas)
+    with open(base_out / "steering_sweep.csv", "w") as f:
+        writer = csv.DictWriter(f, fieldnames=list(sweep[0].keys()))
+        writer.writeheader()
+        writer.writerows(sweep)
 
-    # Run components based on mode
-    steering = None
+    contrastive = confused_pair_improvement(
+        model, x, feat, y, directions_t, alphas,
+        top_k_pairs=int(p6.get("contrastive_top_k_pairs", 10)),
+    )
+    if contrastive:
+        with open(base_out / "contrastive_pairs.csv", "w") as f:
+            writer = csv.DictWriter(f, fieldnames=list(contrastive[0].keys()))
+            writer.writeheader()
+            writer.writerows(contrastive)
 
-    if args.mode in ['full', 'steering', 'contrastive']:
-        # 1. Extract activations
-        with LogTimer(logger, "Activation extraction"):
-            activations, labels, predictions, logits = run_activation_extraction(
-                model, data_module, config, args.force_recompute
-            )
+    # Headline
+    base_acc = sweep[0]["baseline_overall_acc"]
+    best_per_class = {}
+    for row in sweep:
+        c = row["target_class"]
+        if c not in best_per_class or row["target_class_acc"] > best_per_class[c]["target_class_acc"]:
+            best_per_class[c] = row
 
-        # Log basic metrics
-        accuracy = np.mean(predictions == labels)
-        tracker.log('train_accuracy', accuracy)
-        logger.info(f"Training accuracy: {accuracy:.4f}")
+    best_pair_recovery = {}
+    for row in contrastive:
+        key = (row["class_a"], row["class_b"])
+        if key not in best_pair_recovery or row["recovery_rate"] > best_pair_recovery[key]["recovery_rate"]:
+            best_pair_recovery[key] = row
 
-        # 2. Compute steering vectors
-        with LogTimer(logger, "Steering vector computation"):
-            steering = run_steering_computation(
-                activations, labels, config, args.force_recompute
-            )
-
-    if args.mode in ['full', 'alignment']:
-        # 3. Alignment evaluation
-        with LogTimer(logger, "Alignment evaluation"):
-            alignment_report = run_alignment_evaluation(model, data_module, config)
-
-        tracker.log('rc_consistency', alignment_report['rc_consistency']['consistency_rate'])
-        tracker.log('ece_before', alignment_report['calibration']['ece_before'])
-        tracker.log('ece_after', alignment_report['calibration']['ece_after'])
-
-    if args.mode in ['full', 'contrastive']:
-        # 4. Contrastive steering
-        if steering is None:
-            # Need to load steering vectors
-            steering_path = cache_dir / 'steering_vectors.npz'
-            steering = SteeringVectorComputer.load(steering_path)
-
-        with LogTimer(logger, "Contrastive steering analysis"):
-            confusion_report = run_contrastive_steering(
-                model, steering, data_module, config
-            )
-
-        tracker.log('contrastive_improvement',
-                    confusion_report['improvement']['improvement'])
-
-    # Summary
-    logger.info("=" * 60)
-    logger.info("Phase 6 Complete - Summary")
-    logger.info("=" * 60)
-    summary = tracker.summarize()
-    for metric, stats in summary.items():
-        logger.info(f"  {metric}: {stats['last']:.4f}")
-
-    # Save summary
-    summary_path = results_dir / 'phase6_summary.json'
-    with open(summary_path, 'w') as f:
-        json.dump(summary, f, indent=2)
-    logger.info(f"Summary saved to: {summary_path}")
+    headline = {
+        "baseline_overall_acc": base_acc,
+        "per_class_best_target_acc": {
+            STATE_NAMES[c]: {"alpha": r["alpha"], "target_acc": r["target_class_acc"],
+                              "overall_acc": r["overall_acc"]}
+            for c, r in best_per_class.items()
+        },
+        "contrastive_recovery": [
+            {"a": r["class_a_name"], "b": r["class_b_name"],
+             "alpha": r["alpha"], "recovery_rate": r["recovery_rate"],
+             "still_b": r["still_predicting_b"], "n": r["n_misclassified"]}
+            for r in best_pair_recovery.values()
+        ],
+    }
+    (base_out / "summary.json").write_text(json.dumps(headline, indent=2))
+    print(f"Wrote steering results to {base_out}")
+    print(f"Baseline overall acc: {base_acc:.4f}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

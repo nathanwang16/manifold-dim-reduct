@@ -1,83 +1,125 @@
-# Chromatin State Prediction Challenge: "The Discovery Engine"
+# Chromatin State Prediction — Mechanistic Interpretability Pipeline
 
-This repository contains the solution for the **Chromatin State Prediction Challenge** at the UCLA MiniHack. The goal is to predict **ChromHMM chromatin state annotations** (18 classes) for **200bp DNA sequences**.
+End-to-end pipeline for training an interpretable CNN + attention model
+on the Roadmap 18-state full dataset (1M balanced train, ~64M val,
+~63M test, 200 bp sequences) and then turning the trained model into a
+*microscope* on chromatin sequence patterns via mechanistic
+interpretability techniques (Sparse Autoencoders, activation patching,
+activation steering, saliency, and in-silico mutagenesis).
 
-Because the labels are provided as abstract integers (1–18), this solution employs a **"Discovery Engine"** approach: we treat the labels as unknown biological states and use manifold learning, interpretable deep learning, and feature analysis to "rediscover" their biological meaning (e.g., Promoter, Enhancer, Heterochromatin).
+Hardware target: 5× RTX 3090 (24 GB) · CUDA 12.4+ · PyTorch 2.6+.
+Environment: `conda activate biohack` (see `environment.yml`).
 
-## Repository Structure
+## Pipeline Overview
 
 ```
-manifold-dim-reduct/
-├── phase0_aggregate/    # Roadmap download, liftOver, and corpus assembly
-├── phase1_filter/       # Data engineering & augmentation
-├── phase2_manifold/     # Manifold learning (UMAP/PHATE) & visualization
-├── phase3_model/        # Main CNN model (training & inference)
-├── phase6_steering/     # Steering vectors & alignment analysis
-├── phase8/              # Label-to-Biological State identification
-├── data/                # Dataset folder (input CSVs)
-├── guide.md             # Detailed research master plan
-└── README.md            # This file
+phase0_aggregate → phase1_filter → phase2_manifold → phase3_model
+     │                                                    │
+     ▼                                                    ▼
+  raw ChromHMM                            ┌──────────────┴──────────────┐
+  → hg38 corpora                          ▼                             ▼
+                                 phase4_sae  phase5_patching  phase6_steering
+                                     │          │                  │
+                                     └──────────┴──────────────────┘
+                                                ▼
+                                    phase7_diagnostics
+                                                ▼
+                                    phase8_motifs (hypotheses)
 ```
 
-## Key Components
+## Phase Directory
 
-### 0. Dataset Aggregation (`phase0_aggregate/`)
-- Downloads the full Roadmap 18-state `core_K27ac` release, metadata, hg19->hg38 chain, and hg38 reference FASTA.
-- Expands merged ChromHMM segments into 200bp bins, lifts them to hg38, extracts sequences, and assembles merged train/val/test corpora.
+| Dir | Purpose | Key entrypoint |
+|-----|---------|----------------|
+| `phase0_aggregate/` | Roadmap download + liftOver + merged train/val/test corpora | `scripts/run_phase0_aggregate.py` |
+| `phase1_filter/`    | Hierarchy labels + class-balanced subsample indices                | `run_phase1.py` |
+| `phase2_manifold/`  | k-mer features, PCA, UMAP/PHATE of the label landscape             | `run_phase2.py` |
+| `phase3_model/`     | `ChromatinCNNAttentionV2` DDP training on 5 GPUs                   | `launch.sh` (wraps `train_ddp.py`) |
+| `phase4_sae/`       | TopK / L1 Sparse Autoencoder on the 384-d bottleneck + feature dict | `run_phase4.py` |
+| `phase5_patching/`  | Activation patching + layer-wise direct logit attribution          | `run_phase5.py` |
+| `phase6_steering/`  | Per-class steering vectors + alpha sweep + contrastive steering    | `run_phase6.py` |
+| `phase7_diagnostics/` | SmoothGrad saliency, temperature calibration, RC consistency      | `run_phase7.py` |
+| `phase8_motifs/`    | Stem-filter PWMs, in-silico mutagenesis, hypothesis records         | `run_phase8.py` |
+| `chromatin_lib/`    | Shared utilities: data loaders, one-hot, hierarchy, paths           | — |
 
-### 1. Data Engineering (`phase1_filter/`)
-- **Reverse Complement Augmentation**: Ensures the model treats forward/reverse strands symmetrically.
-- **Hierarchy Extraction**: Infers super-families (e.g., "Active", "Repressed") from label similarities.
+## Quick Start
 
-### 2. Manifold Analysis (`phase2_manifold/`)
-- Maps the 18 states into a low-dimensional functional landscape.
-- Uses **PHATE** and **UMAP** on k-mer frequencies to visualize label relationships.
-
-### 3. The "Discovery Engine" Model (`phase3_model/`)
-- **Architecture**: `ChromatinCNNAttention`
-  - 1D-CNN backbone for motif detection.
-  - Self-attention mechanism for long-range dependencies.
-  - Global pooling for position invariance.
-- **Training**:
-  - RC-consistency loss.
-  - Hierarchical multitask learning (optional).
-  - Data-driven filter initialization (Mechanistic Interpretability fix).
-
-### 4. Steering & Alignment (`phase6_steering/`)
-- **Steering Vectors**: Calculate directions in activation space that shift predictions from one state to another.
-- **Inference-Time Intervention**: Use steering to resolve confusion between similar states.
-
-### 5. Biological Mapping (`phase8/`)
-- Matches the abstract labels (1-18) to biological states using feature profiles (GC content, CpG ratio, Repeats).
-- Uses **Hungarian Assignment** to optimally map learned clusters to known ChromHMM states.
-
-## Usage
-
-### Training
 ```bash
-python phase3_model/run_phase3.py --config config.json
+conda activate biohack
+
+# Phase 0: one-time download + preprocess (requires network + disk)
+python phase0_aggregate/scripts/run_phase0_aggregate.py \
+    --config phase0_aggregate/config/roadmap_18state_full.json
+
+# Phase 1: build balanced subsample indices + hierarchy labels
+python phase1_filter/run_phase1.py --splits train val
+
+# Phase 2: manifold visualisation (fast, single-GPU)
+python phase2_manifold/run_phase2.py
+
+# Phase 3: pre-bake mmap caches, then DDP train on 5x 3090
+python phase3_model/precompute_cache.py --splits train
+bash   phase3_model/launch.sh
+
+# Phases 4-8: single-GPU, consume phase-3 checkpoint
+python run_pipeline.py --checkpoint results/phase3/checkpoints/best.pt --phases 4,5,6,7,8
+# or individually:
+python phase4_sae/run_phase4.py        --checkpoint results/phase3/checkpoints/best.pt
+python phase5_patching/run_phase5.py   --checkpoint results/phase3/checkpoints/best.pt
+python phase6_steering/run_phase6.py   --checkpoint results/phase3/checkpoints/best.pt
+python phase7_diagnostics/run_phase7.py --checkpoint results/phase3/checkpoints/best.pt
+python phase8_motifs/run_phase8.py     --checkpoint results/phase3/checkpoints/best.pt
 ```
 
-### Inference
-```bash
-python phase3_model/inference.py
+## Global Configuration
+
+A single `config.json` at the repo root contains every phase's knobs
+under top-level keys: `dataset`, `phase1`, `phase2`, `phase3`,
+`phase4_sae`, `phase5_patching`, `phase6`, `phase7`, `phase8`. Paths are
+resolved relative to the repo root.
+
+## Outputs
+
+All run artifacts live under `results/`:
+
+```
+results/phase1_filter/      balanced indices + hierarchy label caches
+results/phase2/             k-mer features + UMAP/PHATE embeddings + figures
+results/phase3/             DDP checkpoints + training history
+results/phase4_sae/         sae.pt + activation caches + features.json
+results/phase5_patching/    patching_results.csv + circuit_summary.json + layer_dla.json
+results/phase6_steering/    steering_vectors.npz + alpha sweep + contrastive pairs
+results/phase7_diagnostics/ saliency_per_class.npy + calibration.json + consistency.json
+results/phase8_motifs/      stem_motifs.npz + ism_per_class.npy + hypotheses.{json,md}
 ```
 
-### Analysis
-```bash
-python phase6_steering/analysis.py
-```
+## What's "discovered" vs. "known"
 
-### Roadmap Aggregation
-```bash
-conda run -n biohack python phase0_aggregate/scripts/run_phase0_aggregate.py --config phase0_aggregate/config/roadmap_18state_full.json
-```
+The previous iteration of this project treated the 18 ChromHMM labels
+as unknown states and tried to re-identify them post-hoc (phase 8's
+original "label identification" objective). The new roadmap corpus
+already exposes ground-truth `state_name`, `family`, and `subcluster`
+via the meta CSVs, so phase 8 has been repurposed: instead of
+identifying labels we use the trained model to *generate biologically
+testable hypotheses about motifs that drive each state* via
+SAE features (phase 4), circuit localization (phase 5), steering
+directions (phase 6), saliency (phase 7), and ISM + stem-filter PWMs
+(phase 8).
 
-## Competition Specs
-- **Input**: 200bp DNA (A, C, G, T).
-- **Output**: Integer label 1–18.
-- **Metric**: Accuracy.
-- **Constraints**: No external data, no specialized DNA software (standard ML libs only).
+## Hardware & runtime budget
 
-## Revision History
-- 2026-04-08: Added `phase0_aggregate` to download and preprocess the full Roadmap 18-state dataset into hg38 training corpora, including reproducible config, QC, and merged split generation.
+- Phase 3 DDP training: ~18–22 h on 5× RTX 3090 for 40 epochs.
+- Phase 4 SAE: ~10 min on one GPU.
+- Phase 5 patching: ~15 min on one GPU.
+- Phase 6 steering sweep: ~10 min.
+- Phase 7 diagnostics: ~15 min.
+- Phase 8 motif discovery: ~30 min (dominated by ISM).
+
+## Revision history
+
+- **2026-04-21**: Pipeline v2 overhaul. Added `chromatin_lib/`,
+  rewrote phases 3/4/5/6, added phases 7 (diagnostics) and 8 (motifs).
+  Reworked all data loaders for the 12 GB val/test CSVs via
+  `StreamingChromatinDataset` + mmap-backed `CachedMmapDataset`.
+  DDP hardened for 5× 3090.
+- 2026-04-08: Added `phase0_aggregate` (Roadmap 18-state full).

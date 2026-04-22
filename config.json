@@ -1,92 +1,149 @@
 {
-  "use_demo_data": false,
-  "data": {
-    "train_sequences": "data/train_sequences.csv",
-    "train_labels": "data/train_labels.csv",
-    "test_sequences": "data/testsequences.csv",
-    "val_sequences": "data/val_sequences.csv",
-    "val_labels": "data/val_labels.csv",
-    "mi_sequences": "data/mi_sequences.csv",
-    "mi_labels": "data/mi_labels.csv",
-    "viz_sequences": "data/trainsequences.csv",
-    "viz_labels": "data/trainlabels.csv",
+  "_comment": "Canonical config for the roadmap_18state_full pipeline. All paths are repo-root-relative.",
+  "dataset": {
+    "root": "phase0_aggregate/data/roadmap_18state_full",
+    "train_sequences": "phase0_aggregate/data/roadmap_18state_full/processed/merged/train_sequences.csv",
+    "train_labels":    "phase0_aggregate/data/roadmap_18state_full/processed/merged/train_labels.csv",
+    "train_meta":      "phase0_aggregate/data/roadmap_18state_full/processed/merged/train_meta.csv",
+    "val_sequences":   "phase0_aggregate/data/roadmap_18state_full/processed/merged/val_sequences.csv",
+    "val_labels":      "phase0_aggregate/data/roadmap_18state_full/processed/merged/val_labels.csv",
+    "val_meta":        "phase0_aggregate/data/roadmap_18state_full/processed/merged/val_meta.csv",
+    "test_sequences":  "phase0_aggregate/data/roadmap_18state_full/processed/merged/test_sequences.csv",
+    "test_labels":     "phase0_aggregate/data/roadmap_18state_full/processed/merged/test_labels.csv",
+    "test_meta":       "phase0_aggregate/data/roadmap_18state_full/processed/merged/test_meta.csv",
     "sequence_length": 200,
-    "n_classes": 18
+    "n_classes": 18,
+    "n_families": 6,
+    "n_subclusters": 7
+  },
+  "phase1": {
+    "output_dir": "phase1_filter/outputs",
+    "viz_subsample_per_class": 5000,
+    "eval_subsample_per_class": 20000,
+    "seed": 20260408
   },
   "phase2": {
-    "kmer_k": 5,
+    "kmer_k": 6,
     "n_positional_bins": 10,
     "pca_n_components": 50,
-    "n_jobs": 8,
-    "feature_extraction_batch_size": 1000,
-    "use_pca_preprocessing": true,
     "n_pcs_for_phate": 30,
+    "n_jobs": 16,
+    "feature_extraction_batch_size": 2000,
+    "subsample_per_class": 3000,
     "umap_params": [
       {"n_neighbors": 15, "min_dist": 0.1},
       {"n_neighbors": 30, "min_dist": 0.1},
-      {"n_neighbors": 15, "min_dist": 0.25},
       {"n_neighbors": 50, "min_dist": 0.0}
     ],
     "phate_params": [
-      {"knn": 10, "decay": 20},
-      {"knn": 15, "decay": 40},
-      {"knn": 5, "decay": 10}
+      {"knn": 15, "decay": 40}
     ],
-    "subsample_for_viz": 50000,
-    "random_state": null
+    "features_dir":   "results/phase2/features",
+    "embeddings_dir": "results/phase2/embeddings",
+    "analysis_dir":   "results/phase2/analysis",
+    "figures_dir":    "results/phase2/figures",
+    "random_state": 20260408
   },
   "phase3": {
     "n_classes": 18,
-    "conv1_filters": 128,
-    "conv2_filters": 256,
-    "bottleneck_filters": 512,
-    "kernel1": 19,
-    "kernel2": 9,
-    "dropout_rate": 0.3,
-    "use_l1_regularization": true,
-    "l1_weight": 1e-5,
-    "label_smoothing": 0.08,
-    "learning_rate": 1e-2,
-    "warmup_epochs": 5,
-    "checkpoint_dir": "phase3_model/checkpoints",
-    "training": {
-      "num_workers": 8,
-      "rc_augment": true,
-      "jitter_prob": 0.35,
-      "jitter_min_len": 170,
-      "noise_prob": 0.05,
-      "cache_data": true
-    }
+    "model": "ChromatinCNNAttention",
+    "stem_filters": 256,
+    "stem_kernel": 19,
+    "mid_filters": 384,
+    "wide_filters": 512,
+    "attn_heads": 8,
+    "attn_layers": 2,
+    "bottleneck_dim": 384,
+    "dropout": 0.25,
+    "use_engineered_features": true,
+    "engineered_feature_dim_in": 5,
+    "engineered_feature_out_dim": 64,
+    "use_hierarchy": true,
+    "family_loss_weight": 0.3,
+    "subcluster_loss_weight": 0.1,
+    "use_hierarchical_classifier": false,
+    "hier_family_weight": 0.0,
+    "hier_cond_weight": 0.0,
+    "main_ce_weight": 1.0,
+    "family_embed_dim": 16,
+    "label_smoothing": 0.05,
+    "learning_rate": 3e-3,
+    "weight_decay": 1e-3,
+    "warmup_epochs": 3,
+    "num_epochs": 40,
+    "batch_size_per_gpu": 1024,
+    "num_workers_per_gpu": 6,
+    "jitter_prob": 0.3,
+    "jitter_min_len": 170,
+    "noise_prob": 0.02,
+    "rc_prob_train": 0.5,
+    "rc_consistency_weight": 0.1,
+    "use_amp": true,
+    "gradient_clip_max_norm": 2.0,
+    "scheduler": "warmup_cosine",
+    "scheduler_cycle_epochs": 40,
+    "lr_min": 1e-6,
+    "warmup_start_factor": 1e-2,
+    "early_stopping_patience": 10,
+    "save_every_epochs": 1,
+    "ddp": {
+      "enabled": true,
+      "world_size": 5,
+      "backend": "nccl"
+    },
+    "eval": {
+      "val_balanced_per_class": 5000,
+      "val_balanced_seed": 20260408,
+      "full_val_every": 5
+    },
+    "checkpoint_dir": "results/phase3/checkpoints",
+    "log_dir": "results/phase3/logs"
+  },
+  "phase4_sae": {
+    "activation_layer": "bottleneck",
+    "activation_dim": 384,
+    "feature_dim": 4096,
+    "sae_type": "topk",
+    "topk_k": 32,
+    "l1_weight": 2e-3,
+    "lr": 1e-3,
+    "num_epochs": 20,
+    "batch_size": 4096,
+    "activation_cache_samples": 250000,
+    "balanced_per_class": 12000,
+    "output_dir": "results/phase4_sae"
+  },
+  "phase5_patching": {
+    "n_pairs_per_confusion": 200,
+    "layers_to_patch": ["stem", "res_block1", "conv_expand", "res_block2", "attention", "bottleneck"],
+    "balanced_eval_per_class": 2000,
+    "output_dir": "results/phase5_patching"
   },
   "phase6": {
-    "steering": {
-      "intervention_layer": "bottleneck",
-      "default_alpha": 0.5,
-      "alpha_search_range": [0.0, 2.0],
-      "alpha_search_steps": 20,
-      "confidence_threshold": 0.6
-    },
-    "contrastive": {
-      "confusion_threshold": 0.05,
-      "top_k_pairs": 10,
-      "bidirectional": true
-    },
-    "alignment": {
-      "calibration_n_bins": 15,
-      "monotonicity_levels": 10,
-      "rc_averaging_inference": true
-    },
-    "temperature_scaling": {
-      "method": "nll",
-      "initial_temp": 0.8
-    },
-    "cache_dir": "phase6_steering/cache",
-    "results_dir": "phase6_steering/results"
+    "balanced_val_per_class": 5000,
+    "confidence_threshold": 0.6,
+    "default_alpha": 0.5,
+    "alpha_grid": [0.0, 0.25, 0.5, 0.75, 1.0, 1.5],
+    "contrastive_top_k_pairs": 10,
+    "contrastive_confusion_threshold": 0.05,
+    "output_dir": "results/phase6_steering"
   },
-  "output": {
-    "features_dir": "phase2_manifold/features",
-    "embeddings_dir": "phase2_manifold/embeddings",
-    "analysis_dir": "phase2_manifold/analysis",
-    "figures_dir": "phase2_manifold/figures"
+  "phase7": {
+    "saliency_n_per_class": 64,
+    "smoothgrad_n_samples": 20,
+    "smoothgrad_noise_std": 0.1,
+    "ism_positions": "all",
+    "output_dir": "results/phase7_diagnostics"
+  },
+  "phase8": {
+    "motif_n_filters": 256,
+    "motif_top_activations": 500,
+    "motif_min_info_content": 0.3,
+    "motif_top_n_report": 60,
+    "motif_top_class_min_frac": 0.15,
+    "motif_batch_limit": 40,
+    "ism_n_per_class": 16,
+    "ism_mutation_batch": 800,
+    "output_dir": "results/phase8_motifs"
   }
 }
